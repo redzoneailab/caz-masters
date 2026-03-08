@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const playerId = session.metadata?.playerId;
 
+    // Handle tournament registration payment
+    const playerId = session.metadata?.playerId;
     if (playerId) {
       await prisma.payment.update({
         where: { playerId },
@@ -35,6 +36,15 @@ export async function POST(req: NextRequest) {
           // Log but don't fail
         }
       }
+    }
+
+    // Handle donation payment
+    const donationId = session.metadata?.donationId;
+    if (donationId) {
+      await prisma.donation.update({
+        where: { id: donationId },
+        data: { status: "completed" },
+      });
     }
   }
 

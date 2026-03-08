@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import AdminTeams from "./AdminTeams";
+import AdminHallOfFame from "./AdminHallOfFame";
+import AdminGallery from "./AdminGallery";
+import AdminDonations from "./AdminDonations";
+import AdminCourse from "./AdminCourse";
+import AdminScoring from "./AdminScoring";
 
 interface Payment {
   id: string;
@@ -29,6 +35,16 @@ interface Tournament {
   maxPlayers: number;
 }
 
+const TABS = [
+  { id: "players", label: "Players" },
+  { id: "teams", label: "Teams" },
+  { id: "course", label: "Course & PINs" },
+  { id: "scoring", label: "Live Scores" },
+  { id: "hall-of-fame", label: "Hall of Fame" },
+  { id: "gallery", label: "Gallery" },
+  { id: "donations", label: "Donations" },
+];
+
 export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -36,6 +52,7 @@ export default function AdminDashboard() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("players");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -189,36 +206,28 @@ export default function AdminDashboard() {
   return (
     <section className="py-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-navy-900">Admin Dashboard</h1>
             <p className="text-navy-500 text-sm">The Caz Masters 2026</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 overflow-x-auto border-b border-navy-200 pb-px">
+          {TABS.map((tab) => (
             <button
-              onClick={fetchData}
-              disabled={loading}
-              className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-            >
-              {loading ? "Loading..." : "Refresh"}
-            </button>
-            <button
-              onClick={exportCSV}
-              className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-            >
-              Export CSV
-            </button>
-            <button
-              onClick={toggleRegistration}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                tournament?.registrationOpen
-                  ? "bg-red-100 text-red-700 hover:bg-red-200"
-                  : "bg-navy-100 text-navy-600 hover:bg-navy-200"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-t-lg transition-colors ${
+                activeTab === tab.id
+                  ? "bg-white text-navy-900 border border-navy-200 border-b-white -mb-px"
+                  : "text-navy-500 hover:text-navy-700"
               }`}
             >
-              {tournament?.registrationOpen ? "Close Registration" : "Open Registration"}
+              {tab.label}
             </button>
-          </div>
+          ))}
         </div>
 
         {error && (
@@ -227,100 +236,139 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 border border-navy-100">
-            <p className="text-sm text-navy-500">Total Registered</p>
-            <p className="text-3xl font-bold text-navy-900">{players.length}</p>
-            <p className="text-xs text-navy-400">of {tournament?.maxPlayers || 72}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-navy-100">
-            <p className="text-sm text-navy-500">Paid</p>
-            <p className="text-3xl font-bold text-navy-900">{paidCount}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-navy-100">
-            <p className="text-sm text-red-600">Unpaid</p>
-            <p className="text-3xl font-bold text-red-700">{unpaidCount}</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-navy-100">
-            <p className="text-sm text-navy-500">Registration</p>
-            <p className="text-xl font-bold mt-1">
-              {tournament?.registrationOpen ? (
-                <span className="text-navy-600">Open</span>
-              ) : (
-                <span className="text-red-700">Closed</span>
-              )}
-            </p>
-          </div>
-        </div>
+        {/* Players Tab */}
+        {activeTab === "players" && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={fetchData}
+                disabled={loading}
+                className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+              >
+                {loading ? "Loading..." : "Refresh"}
+              </button>
+              <button
+                onClick={exportCSV}
+                className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={toggleRegistration}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  tournament?.registrationOpen
+                    ? "bg-red-100 text-red-700 hover:bg-red-200"
+                    : "bg-navy-100 text-navy-600 hover:bg-navy-200"
+                }`}
+              >
+                {tournament?.registrationOpen ? "Close Registration" : "Open Registration"}
+              </button>
+            </div>
 
-        {/* Player table */}
-        <div className="bg-white rounded-xl border border-navy-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-navy-50 border-b border-navy-100">
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700">Name</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden sm:table-cell">Email</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden md:table-cell">Phone</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Shirt</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700">Flight</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Team Pref</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700">Payment</th>
-                  <th className="text-left px-4 py-3 font-semibold text-navy-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-navy-400">
-                      No registrations yet.
-                    </td>
-                  </tr>
-                ) : (
-                  players.map((player) => (
-                    <tr key={player.id} className="border-b border-navy-50 hover:bg-navy-50/50">
-                      <td className="px-4 py-3 font-medium text-navy-900">
-                        {player.fullName}
-                        {player.returningPlayer && (
-                          <span className="ml-1 text-xs text-gold-500" title="Returning player">*</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-navy-600 hidden sm:table-cell">{player.email}</td>
-                      <td className="px-4 py-3 text-navy-600 hidden md:table-cell">{player.phone}</td>
-                      <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">{player.shirtSize}</td>
-                      <td className="px-4 py-3 text-navy-600">{player.genderFlight}</td>
-                      <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">
-                        {player.teamPreference || "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {statusBadge(player.payment?.status || "unpaid")}
-                      </td>
-                      <td className="px-4 py-3">
-                        {player.payment?.status !== "paid_online" && player.payment?.status !== "paid_manual" && (
-                          <button
-                            onClick={() => updatePaymentStatus(player.id, "paid_manual")}
-                            className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                          >
-                            Mark Paid
-                          </button>
-                        )}
-                        {(player.payment?.status === "paid_online" || player.payment?.status === "paid_manual") && (
-                          <button
-                            onClick={() => updatePaymentStatus(player.id, "unpaid")}
-                            className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
-                          >
-                            Mark Unpaid
-                          </button>
-                        )}
-                      </td>
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white rounded-xl p-4 border border-navy-100">
+                <p className="text-sm text-navy-500">Total Registered</p>
+                <p className="text-3xl font-bold text-navy-900">{players.length}</p>
+                <p className="text-xs text-navy-400">of {tournament?.maxPlayers || 72}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-navy-100">
+                <p className="text-sm text-navy-500">Paid</p>
+                <p className="text-3xl font-bold text-navy-900">{paidCount}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-navy-100">
+                <p className="text-sm text-red-600">Unpaid</p>
+                <p className="text-3xl font-bold text-red-700">{unpaidCount}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-navy-100">
+                <p className="text-sm text-navy-500">Registration</p>
+                <p className="text-xl font-bold mt-1">
+                  {tournament?.registrationOpen ? (
+                    <span className="text-navy-600">Open</span>
+                  ) : (
+                    <span className="text-red-700">Closed</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Player table */}
+            <div className="bg-white rounded-xl border border-navy-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-navy-50 border-b border-navy-100">
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Name</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden sm:table-cell">Email</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden md:table-cell">Phone</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Shirt</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Flight</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Team Pref</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Payment</th>
+                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Actions</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  </thead>
+                  <tbody>
+                    {players.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-navy-400">
+                          No registrations yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      players.map((player) => (
+                        <tr key={player.id} className="border-b border-navy-50 hover:bg-navy-50/50">
+                          <td className="px-4 py-3 font-medium text-navy-900">
+                            {player.fullName}
+                            {player.returningPlayer && (
+                              <span className="ml-1 text-xs text-gold-500" title="Returning player">*</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-navy-600 hidden sm:table-cell">{player.email}</td>
+                          <td className="px-4 py-3 text-navy-600 hidden md:table-cell">{player.phone}</td>
+                          <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">{player.shirtSize}</td>
+                          <td className="px-4 py-3 text-navy-600">{player.genderFlight}</td>
+                          <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">
+                            {player.teamPreference || "-"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {statusBadge(player.payment?.status || "unpaid")}
+                          </td>
+                          <td className="px-4 py-3">
+                            {player.payment?.status !== "paid_online" && player.payment?.status !== "paid_manual" && (
+                              <button
+                                onClick={() => updatePaymentStatus(player.id, "paid_manual")}
+                                className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
+                            {(player.payment?.status === "paid_online" || player.payment?.status === "paid_manual") && (
+                              <button
+                                onClick={() => updatePaymentStatus(player.id, "unpaid")}
+                                className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
+                              >
+                                Mark Unpaid
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Other tabs */}
+        {activeTab === "teams" && <AdminTeams password={password} />}
+        {activeTab === "course" && <AdminCourse password={password} />}
+        {activeTab === "scoring" && <AdminScoring password={password} />}
+        {activeTab === "hall-of-fame" && <AdminHallOfFame password={password} />}
+        {activeTab === "gallery" && <AdminGallery password={password} />}
+        {activeTab === "donations" && <AdminDonations password={password} />}
       </div>
     </section>
   );

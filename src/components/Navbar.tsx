@@ -2,9 +2,24 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/teams", label: "Teams" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/scoring", label: "Live Scoring" },
+  { href: "/players", label: "Players" },
+  { href: "/stats", label: "Stats" },
+  { href: "/history", label: "History" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/donate", label: "Donate" },
+];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
 
   return (
     <nav className="sticky top-0 z-50 bg-navy-950/95 backdrop-blur-sm border-b border-navy-800/50">
@@ -15,13 +30,39 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-white/80 hover:text-white transition-colors text-base font-semibold">
-              Home
-            </Link>
-            <Link href="/about" className="text-white/80 hover:text-white transition-colors text-base font-semibold">
-              About
-            </Link>
+          <div className="hidden lg:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-white/80 hover:text-white transition-colors text-sm font-semibold"
+              >
+                {link.label}
+              </Link>
+            ))}
+            {session ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/player/${session.userAccountId}`}
+                  className="text-gold-400 hover:text-gold-300 text-sm font-semibold transition-colors"
+                >
+                  {session.user?.name?.split(" ")[0] || "Profile"}
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="text-white/60 hover:text-white text-xs transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => signIn("google")}
+                className="text-white/80 hover:text-white transition-colors text-sm font-semibold"
+              >
+                Sign In
+              </button>
+            )}
             <Link
               href="/register"
               className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-5 py-2 rounded-lg transition-colors text-sm uppercase tracking-wider"
@@ -33,7 +74,7 @@ export default function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden text-white p-2"
+            className="lg:hidden text-white p-2"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,13 +89,41 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {open && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link href="/" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">
-              Home
-            </Link>
-            <Link href="/about" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">
-              About
-            </Link>
+          <div className="lg:hidden pb-4 space-y-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block text-white/80 hover:text-white py-2 font-semibold text-base"
+              >
+                {link.label}
+              </Link>
+            ))}
+            {session ? (
+              <>
+                <Link
+                  href={`/player/${session.userAccountId}`}
+                  onClick={() => setOpen(false)}
+                  className="block text-gold-400 hover:text-gold-300 py-2 font-semibold text-base"
+                >
+                  My Profile
+                </Link>
+                <button
+                  onClick={() => { signOut(); setOpen(false); }}
+                  className="block text-white/60 hover:text-white py-2 text-sm"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { signIn("google"); setOpen(false); }}
+                className="block text-white/80 hover:text-white py-2 font-semibold text-base"
+              >
+                Sign In with Google
+              </button>
+            )}
             <Link
               href="/register"
               onClick={() => setOpen(false)}

@@ -8,34 +8,48 @@ datasource db {
 }
 
 model Tournament {
-  id                 String    @id @default(cuid())
+  id                 String      @id @default(cuid())
   name               String
-  year               Int       @unique
+  year               Int         @unique
   date               DateTime
   location           String
-  maxPlayers         Int       @default(72)
-  registrationOpen   Boolean   @default(true)
-  entryFee           Int       @default(15000) // cents
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  maxPlayers         Int         @default(72)
+  registrationOpen   Boolean     @default(true)
+  teamsLocked        Boolean     @default(false)
+  entryFee           Int         @default(15000)
+  numHoles           Int         @default(18)
+  finalized          Boolean     @default(false)
+  courseId            String?
+  course             Course?     @relation(fields: [courseId], references: [id])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
   players            Player[]
+  teams              Team[]
+  scorerPins         ScorerPin[]
+  scores             Score[]
 }
 
 model Player {
-  id              String    @id @default(cuid())
+  id              String       @id @default(cuid())
   fullName        String
   email           String
   phone           String
   shirtSize       String
   genderFlight    String
   teamPreference  String?
-  returningPlayer Boolean   @default(false)
+  returningPlayer Boolean      @default(false)
   dietaryNeeds    String?
   tournamentId    String
-  tournament      Tournament @relation(fields: [tournamentId], references: [id])
+  tournament      Tournament   @relation(fields: [tournamentId], references: [id])
   payment         Payment?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  teamId          String?
+  team            Team?        @relation(fields: [teamId], references: [id])
+  userAccountId   String?
+  userAccount     UserAccount? @relation(fields: [userAccountId], references: [id])
+  scores          Score[]
+  scorerPin       ScorerPin?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@unique([email, tournamentId])
 }
@@ -44,10 +58,148 @@ model Payment {
   id              String   @id @default(cuid())
   playerId        String   @unique
   player          Player   @relation(fields: [playerId], references: [id])
-  amount          Int      // cents
-  status          String   @default("unpaid") // "paid_online", "paid_manual", "unpaid"
+  amount          Int
+  status          String   @default("unpaid")
   stripeSessionId String?
-  method          String?  // "stripe", "venmo", "manual", "day_of"
+  method          String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Team {
+  id            String     @id @default(cuid())
+  name          String
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  locked        Boolean    @default(false)
+  maxSize       Int        @default(4)
+  startingHole  Int?
+  members       Player[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([name, tournamentId])
+}
+
+model UserAccount {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  bio       String?
+  players   Player[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HallOfFameEntry {
+  id          String   @id @default(cuid())
+  year        Int
+  category    String
+  winnerName  String
+  teamName    String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([year, category, winnerName])
+}
+
+model GalleryAlbum {
+  id          String         @id @default(cuid())
+  year        Int
+  title       String
+  description String?
+  coverUrl    String?
+  photos      GalleryPhoto[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model GalleryPhoto {
+  id        String       @id @default(cuid())
+  albumId   String
+  album     GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+}
+
+model Donation {
+  id              String   @id @default(cuid())
+  amount          Int
+  donorName       String?
+  donorEmail      String?
+  dedicatedTo     String?
+  message         String?
+  stripeSessionId String?  @unique
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  name        String
+  city        String?
+  state       String?
+  holes       CourseHole[]
+  tournaments Tournament[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model CourseHole {
+  id         String    @id @default(cuid())
+  courseId    String
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  holeNumber Int
+  notes      String?
+  active     Boolean   @default(true)
+  teeBoxes   TeeBox[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([courseId, holeNumber])
+}
+
+model TeeBox {
+  id           String     @id @default(cuid())
+  courseHoleId  String
+  courseHole    CourseHole @relation(fields: [courseHoleId], references: [id], onDelete: Cascade)
+  name         String     // "White", "Red", "Yellow"
+  par          Int
+  yardage      Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([courseHoleId, name])
+}
+
+model ScorerPin {
+  id           String     @id @default(cuid())
+  playerId     String     @unique
+  player       Player     @relation(fields: [playerId], references: [id])
+  pin          String
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model Score {
+  id           String     @id @default(cuid())
+  playerId     String
+  player       Player     @relation(fields: [playerId], references: [id])
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  holeNumber   Int
+  strokes      Int
+  shotgunBeer  Boolean    @default(false)
+  rehit        Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([playerId, tournamentId, holeNumber])
 }

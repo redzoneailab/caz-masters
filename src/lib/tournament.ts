@@ -8,4 +8,6 @@ export const TOURNAMENT = {
   maxPlayers: 72,
   entryFee: 150, // dollars
   entryFeeCents: 15000,
+  shotgunBeerPrice: 5, // dollars per beer
+  numHoles: 9,
 } as const;
