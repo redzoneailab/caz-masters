@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    resendInstance = new Resend(process.env.RESEND_API_KEY || "");
+  }
+  return resendInstance;
+}
 
 export async function sendConfirmationEmail(
   to: string,
@@ -9,7 +16,7 @@ export async function sendConfirmationEmail(
 ) {
   const isPaid = paymentStatus === "paid_online";
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "The Caz Masters <noreply@yourdomain.com>",
     to,
     subject: "You're Registered for The Caz Masters 2026!",
