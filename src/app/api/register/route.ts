@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       returningPlayer,
       dietaryNeeds,
       paymentMethod,
+      afterParty,
     } = body;
 
     // Validate required fields
@@ -82,29 +83,71 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Create after party registration if requested
+    let afterPartyReg = null;
+    if (afterParty && afterParty.numGuests > 0) {
+      const numGuests = Math.min(Math.max(1, afterParty.numGuests), 20);
+      // Check for existing after party registration
+      const existingAP = await prisma.afterPartyRegistration.findUnique({ where: { email } });
+      if (!existingAP) {
+        afterPartyReg = await prisma.afterPartyRegistration.create({
+          data: {
+            name: fullName,
+            email,
+            numGuests,
+            totalAmount: numGuests * TOURNAMENT.afterPartyPriceCents,
+            paymentMethod: paymentMethod === "stripe" ? "stripe" : "at_door",
+            paymentStatus: "unpaid",
+            playerId: player.id,
+          },
+        });
+      }
+    }
+
     if (paymentMethod === "stripe") {
+      // Build line items
+      const lineItems: {
+        price_data: { currency: string; product_data: { name: string; description?: string }; unit_amount: number };
+        quantity: number;
+      }[] = [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `The Caz Masters 2026 - Entry Fee`,
+              description: `Registration for ${fullName}`,
+            },
+            unit_amount: TOURNAMENT.entryFeeCents,
+          },
+          quantity: 1,
+        },
+      ];
+
+      // Add after party line item if applicable
+      if (afterPartyReg) {
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `After Party (${afterPartyReg.numGuests} guest${afterPartyReg.numGuests > 1 ? "s" : ""})`,
+            },
+            unit_amount: TOURNAMENT.afterPartyPriceCents,
+          },
+          quantity: afterPartyReg.numGuests,
+        });
+      }
+
       // Create Stripe checkout session
       const session = await getStripe().checkout.sessions.create({
         payment_method_types: ["card"],
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `The Caz Masters 2026 - Entry Fee`,
-                description: `Registration for ${fullName}`,
-              },
-              unit_amount: TOURNAMENT.entryFeeCents,
-            },
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: "payment",
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/register/confirmation?status=paid`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/register?cancelled=true`,
         customer_email: email,
         metadata: {
           playerId: player.id,
+          ...(afterPartyReg ? { afterPartyId: afterPartyReg.id } : {}),
         },
       });
 
@@ -118,6 +161,14 @@ export async function POST(req: NextRequest) {
           method: "stripe",
         },
       });
+
+      // Link stripe session to after party reg
+      if (afterPartyReg) {
+        await prisma.afterPartyRegistration.update({
+          where: { id: afterPartyReg.id },
+          data: { stripeSessionId: session.id },
+        });
+      }
 
       return NextResponse.json({ checkoutUrl: session.url });
     } else {

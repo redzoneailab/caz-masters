@@ -172,12 +172,12 @@ export default function ScoringInterface() {
 
   function getParForPlayer(hole: Hole, genderFlight: string): number {
     const teeName = getTeeBoxName(hole.holeNumber, genderFlight);
-    return hole.teeBoxes.find((t) => t.name === teeName)?.par || 4;
+    return (hole.teeBoxes || []).find((t) => t.name === teeName)?.par || 4;
   }
 
   function getYardageForPlayer(hole: Hole, genderFlight: string): number | null {
     const teeName = getTeeBoxName(hole.holeNumber, genderFlight);
-    return hole.teeBoxes.find((t) => t.name === teeName)?.yardage ?? null;
+    return (hole.teeBoxes || []).find((t) => t.name === teeName)?.yardage ?? null;
   }
 
   function getScore(playerId: string, holeNumber: number): ScoreEntry {
@@ -365,7 +365,7 @@ export default function ScoringInterface() {
         <div className="text-center mb-6">
           <h2 className="text-5xl font-black text-white">Hole {hole.holeNumber}</h2>
           <div className="flex items-center justify-center gap-3 mt-2">
-            {hole.teeBoxes.map((t) => (
+            {(hole.teeBoxes || []).map((t) => (
               <div key={t.name} className="text-center">
                 <span className="text-navy-500 text-xs block">{t.name}</span>
                 <span className="text-gold-400 font-bold">Par {t.par}</span>

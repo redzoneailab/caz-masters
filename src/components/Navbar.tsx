@@ -1,25 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 
-const navLinks = [
-  { href: "/", label: "Home" },
+interface DropdownProps {
+  label: string;
+  items: { href: string; label: string }[];
+}
+
+function NavDropdown({ label, items }: DropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-white/80 hover:text-white transition-colors text-sm font-semibold flex items-center gap-1"
+      >
+        {label}
+        <svg className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 bg-navy-900 border border-navy-700 rounded-lg shadow-xl py-1 min-w-[160px] z-50">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-navy-800 transition-colors font-medium"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const topLinks = [
   { href: "/about", label: "About" },
-  { href: "/teams", label: "Teams" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/scoring", label: "Live Scoring" },
-  { href: "/players", label: "Players" },
-  { href: "/stats", label: "Stats" },
-  { href: "/history", label: "History" },
-  { href: "/gallery", label: "Gallery" },
+  { href: "/tournament", label: "Tournament" },
+  { href: "/store", label: "Store" },
   { href: "/donate", label: "Donate" },
+];
+
+const liveItems = [
+  { href: "/scoring", label: "Scoring" },
+  { href: "/leaderboard", label: "Leaderboard" },
+];
+
+const recordBookItems = [
+  { href: "/stats", label: "Stats" },
+  { href: "/players", label: "Players" },
+  { href: "/history", label: "Hall of Fame" },
+  { href: "/gallery", label: "Gallery" },
 ];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const { data: session } = useSession();
+
+  function toggleMobileGroup(group: string) {
+    setMobileExpanded(mobileExpanded === group ? null : group);
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-navy-950/95 backdrop-blur-sm border-b border-navy-800/50">
@@ -31,7 +88,7 @@ export default function Navbar() {
 
           {/* Desktop */}
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
+            {topLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -40,6 +97,8 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <NavDropdown label="Live" items={liveItems} />
+            <NavDropdown label="Record Book" items={recordBookItems} />
             {session ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -89,8 +148,8 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {open && (
-          <div className="lg:hidden pb-4 space-y-2">
-            {navLinks.map((link) => (
+          <div className="lg:hidden pb-4 space-y-1">
+            {topLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -100,6 +159,57 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Live group */}
+            <button
+              onClick={() => toggleMobileGroup("live")}
+              className="flex items-center justify-between w-full text-white/80 hover:text-white py-2 font-semibold text-base"
+            >
+              Live
+              <svg className={`w-4 h-4 transition-transform ${mobileExpanded === "live" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {mobileExpanded === "live" && (
+              <div className="pl-4 space-y-1">
+                {liveItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="block text-white/60 hover:text-white py-1.5 text-sm font-medium"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Record Book group */}
+            <button
+              onClick={() => toggleMobileGroup("recordbook")}
+              className="flex items-center justify-between w-full text-white/80 hover:text-white py-2 font-semibold text-base"
+            >
+              Record Book
+              <svg className={`w-4 h-4 transition-transform ${mobileExpanded === "recordbook" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {mobileExpanded === "recordbook" && (
+              <div className="pl-4 space-y-1">
+                {recordBookItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="block text-white/60 hover:text-white py-1.5 text-sm font-medium"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
             {session ? (
               <>
                 <Link
@@ -127,7 +237,7 @@ export default function Navbar() {
             <Link
               href="/register"
               onClick={() => setOpen(false)}
-              className="block bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-5 py-2.5 rounded-lg text-center uppercase tracking-wider text-sm"
+              className="block bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-5 py-2.5 rounded-lg text-center uppercase tracking-wider text-sm mt-2"
             >
               Register
             </Link>

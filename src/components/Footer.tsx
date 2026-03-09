@@ -11,25 +11,32 @@ export default function Footer() {
           </div>
           <div className="flex flex-col sm:flex-row gap-8">
             <div className="flex flex-col gap-2 text-sm font-medium">
-              <Link href="/" className="hover:text-white transition-colors">Home</Link>
               <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
               <Link href="/register" className="hover:text-gold-400 transition-colors">Register</Link>
             </div>
             <div className="flex flex-col gap-2 text-sm font-medium">
-              <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
-              <Link href="/history" className="hover:text-white transition-colors">Hall of Fame</Link>
-              <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
+              <Link href="/store" className="hover:text-gold-400 transition-colors">Store</Link>
+              <Link href="/donate" className="hover:text-gold-400 transition-colors">Caz Cares</Link>
+              <Link href="/afterparty" className="hover:text-white transition-colors">After Party</Link>
             </div>
             <div className="flex flex-col gap-2 text-sm font-medium">
-              <Link href="/donate" className="hover:text-gold-400 transition-colors">Donate</Link>
+              <Link href="/history" className="hover:text-white transition-colors">Hall of Fame</Link>
+              <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
+              <Link href="/stats" className="hover:text-white transition-colors">Stats</Link>
             </div>
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-navy-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
           <p>&copy; {new Date().getFullYear()} The Caz Masters</p>
-          <p className="text-navy-600 uppercase tracking-[0.2em] font-bold text-xs">
-            Brought to You by The Dog
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-navy-600 uppercase tracking-[0.2em] font-bold text-xs">
+              Brought to You by The Dog
+            </p>
+            <Link href="/admin" className="text-navy-700 hover:text-navy-500 text-xs transition-colors">
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

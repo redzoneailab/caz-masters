@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     .filter((h) => h.holeNumber <= tournament.numHoles)
     .map((h) => ({
       holeNumber: h.holeNumber,
-      teeBoxes: h.teeBoxes.map((t) => ({
+      teeBoxes: (h.teeBoxes || []).map((t) => ({
         name: t.name,
         par: t.par,
         yardage: t.yardage,

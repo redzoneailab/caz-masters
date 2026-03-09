@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TOURNAMENT } from "@/lib/tournament";
 
 interface FormData {
   fullName: string;
@@ -29,9 +30,17 @@ export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // After party state
+  const [addAfterParty, setAddAfterParty] = useState(false);
+  const [afterPartyGuests, setAfterPartyGuests] = useState(1);
+
   function update(field: keyof FormData, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
+
+  const afterPartyTotal = afterPartyGuests * TOURNAMENT.afterPartyPrice;
+  const tournamentTotal = TOURNAMENT.entryFee;
+  const grandTotal = tournamentTotal + (addAfterParty ? afterPartyTotal : 0);
 
   async function handleSubmit(paymentMethod: "stripe" | "day_of") {
     setError("");
@@ -41,7 +50,11 @@ export default function RegistrationForm() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, paymentMethod }),
+        body: JSON.stringify({
+          ...form,
+          paymentMethod,
+          afterParty: addAfterParty ? { numGuests: afterPartyGuests } : null,
+        }),
       });
 
       const data = await res.json();
@@ -181,13 +194,87 @@ export default function RegistrationForm() {
         </label>
       </div>
 
+      {/* After Party Upsell */}
+      <div className="border-2 border-navy-100 rounded-xl p-5 bg-navy-50/50">
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="afterParty"
+            className="h-5 w-5 rounded border-navy-300 text-gold-500 focus:ring-gold-400 mt-0.5"
+            checked={addAfterParty}
+            onChange={(e) => setAddAfterParty(e.target.checked)}
+          />
+          <div className="flex-1">
+            <label htmlFor="afterParty" className="text-navy-900 font-bold text-base cursor-pointer">
+              Add the After Party
+            </label>
+            <p className="text-navy-500 text-sm mt-1">
+              {TOURNAMENT.afterPartyVenue} &middot; {TOURNAMENT.afterPartyDate} at {TOURNAMENT.afterPartyTime}
+            </p>
+            <p className="text-navy-500 text-sm">
+              {TOURNAMENT.afterPartyIncludes.join(", ")}
+            </p>
+            <p className="text-gold-600 font-bold text-sm mt-1">
+              ${TOURNAMENT.afterPartyPrice}/person
+            </p>
+          </div>
+        </div>
+
+        {addAfterParty && (
+          <div className="mt-4 pl-8">
+            <label className="block text-sm font-semibold text-navy-700 mb-2">
+              How many guests? <span className="font-normal text-navy-400">(including yourself)</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAfterPartyGuests(Math.max(1, afterPartyGuests - 1))}
+                className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+              >
+                -
+              </button>
+              <span className="text-xl font-bold text-navy-900 w-8 text-center">{afterPartyGuests}</span>
+              <button
+                type="button"
+                onClick={() => setAfterPartyGuests(Math.min(20, afterPartyGuests + 1))}
+                className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+              >
+                +
+              </button>
+              <span className="text-sm text-navy-500">
+                = ${afterPartyTotal}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Payment */}
       <div className="border-t-2 border-navy-100 pt-6 space-y-3">
+        {/* Price summary */}
+        {addAfterParty && (
+          <div className="bg-navy-50 rounded-xl p-4 space-y-2 text-sm">
+            <div className="flex justify-between text-navy-600">
+              <span>Tournament entry</span>
+              <span>${tournamentTotal}</span>
+            </div>
+            <div className="flex justify-between text-navy-600">
+              <span>After Party ({afterPartyGuests} guest{afterPartyGuests > 1 ? "s" : ""})</span>
+              <span>${afterPartyTotal}</span>
+            </div>
+            <div className="flex justify-between font-bold text-navy-900 border-t border-navy-200 pt-2">
+              <span>Total</span>
+              <span>${grandTotal}</span>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => handleSubmit("stripe")}
           disabled={loading || !isValid}
           className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
         >
-          {loading ? "Hold tight..." : "Pay $150 Now"}
+          {loading ? "Hold tight..." : `Pay $${grandTotal} Now`}
         </button>
 
         <button
@@ -199,7 +286,7 @@ export default function RegistrationForm() {
         </button>
 
         <p className="text-center text-xs text-navy-400 mt-2">
-          Card & Venmo accepted via Stripe. Or just bring cash.
+          Card &amp; Venmo accepted via Stripe. Or just bring cash.
         </p>
       </div>
     </div>

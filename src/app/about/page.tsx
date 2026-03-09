@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About | The Caz Masters",
-  description: "The history, rules, and legends of The Caz Masters charity golf tournament.",
+  description: "The story of The Caz Masters charity golf tournament — 15 years of golf, beers, and giving back.",
 };
 
 export default function AboutPage() {
@@ -70,34 +70,29 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Tournament Scoring and Rules */}
-      <section className="py-16 sm:py-24 bg-navy-50">
+      {/* Caz Cares */}
+      <section className="py-16 sm:py-24 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <h2 className="text-3xl sm:text-4xl font-black text-navy-900 uppercase text-center mb-12">
-            Tournament Scoring & Rules
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl p-8 border border-navy-100">
-              <h3 className="text-xl font-black text-navy-900 uppercase mb-3">Stableford Format</h3>
-              <p className="text-navy-600 leading-relaxed text-lg">
-                Points-based scoring. You get points for pars, birdies, and better &mdash; and
-                you don&apos;t have to finish a bad hole. Pick up and move on. Keeps things moving
-                and means one blow-up hole doesn&apos;t ruin your day.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-8 border border-navy-100">
-              <h3 className="text-xl font-black text-navy-900 uppercase mb-3">Prizes</h3>
-              <div className="space-y-2 text-navy-600 text-lg">
-                <p>&#9670; 1st, 2nd, 3rd place teams</p>
-                <p>&#9670; Longest Drive</p>
-                <p>&#9670; Closest to the Pin</p>
-                <p>&#9670; Best Dressed Team</p>
-                <p>&#9670; A few surprises</p>
-                <p>&#9670; Eternal glory</p>
-              </div>
-            </div>
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl sm:text-4xl font-black text-navy-900 uppercase mb-6">
+              Caz Cares
+            </h2>
+            <p className="text-navy-600 text-lg leading-relaxed mb-4">
+              More than a tournament. Every entry fee, every donation, every merch purchase
+              goes directly toward supporting local causes in the Cazenovia community. Youth
+              sports, families in need, and community programs that make this town what it is.
+            </p>
+            <p className="text-navy-600 text-lg leading-relaxed">
+              Over 14 years, we&apos;ve raised thousands for the people and places that matter
+              most. The Caz Masters proves you can have a hell of a time and do some real good
+              while you&apos;re at it.
+            </p>
+            <Link
+              href="/donate"
+              className="inline-block mt-8 bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-8 py-3 rounded-xl transition-colors uppercase tracking-wider"
+            >
+              Support Caz Cares
+            </Link>
           </div>
         </div>
       </section>

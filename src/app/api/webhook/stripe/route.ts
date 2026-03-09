@@ -46,6 +46,35 @@ export async function POST(req: NextRequest) {
         data: { status: "completed" },
       });
     }
+
+    // Handle store order payment
+    const storeOrderId = session.metadata?.storeOrderId;
+    if (storeOrderId) {
+      const order = await prisma.storeOrder.update({
+        where: { id: storeOrderId },
+        data: { status: "paid" },
+        include: { items: true },
+      });
+
+      // Decrement inventory
+      for (const item of order.items) {
+        if (item.variantId) {
+          await prisma.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+      }
+    }
+
+    // Handle after party payment
+    const afterPartyId = session.metadata?.afterPartyId;
+    if (afterPartyId) {
+      await prisma.afterPartyRegistration.update({
+        where: { id: afterPartyId },
+        data: { paymentStatus: "paid_online" },
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

@@ -203,3 +203,72 @@ model Score {
 
   @@unique([playerId, tournamentId, holeNumber])
 }
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  price       Int              // cents
+  imageUrl    String?
+  category    String?
+  active      Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  variants    ProductVariant[]
+  orderItems  OrderItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label      String
+  stock      Int         @default(0)
+  orderItems OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([productId, label])
+}
+
+model StoreOrder {
+  id              String      @id @default(cuid())
+  customerName    String
+  customerEmail   String
+  shippingAddress String
+  items           OrderItem[]
+  totalAmount     Int
+  status          String      @default("pending")
+  stripeSessionId String?     @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String          @id @default(cuid())
+  orderId   String
+  order     StoreOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product         @relation(fields: [productId], references: [id])
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity  Int
+  unitPrice Int
+  createdAt DateTime        @default(now())
+}
+
+model AfterPartyRegistration {
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  numGuests       Int      @default(1)
+  totalAmount     Int
+  paymentMethod   String
+  paymentStatus   String   @default("unpaid")
+  stripeSessionId String?  @unique
+  playerId        String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
