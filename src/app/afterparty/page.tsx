@@ -4,7 +4,7 @@ import { TOURNAMENT } from "@/lib/tournament";
 
 export const metadata = {
   title: "After Party | The Caz Masters",
-  description: "Join us for the Caz Masters After Party - dinner, drinks, awards, and live music.",
+  description: "Join us for the Caz Masters After Party - buffet, awards, and a great time.",
 };
 
 export default function AfterPartyPage() {
@@ -15,7 +15,7 @@ export default function AfterPartyPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-4xl font-black uppercase tracking-tight">The After Party</h1>
           <p className="mt-3 text-navy-300 max-w-2xl mx-auto">
-            The best part of tournament day. Join us for dinner, drinks, awards, and a night to remember.
+            The best part of tournament day. Join us for the buffet, awards ceremony, and a great time.
           </p>
         </div>
       </section>

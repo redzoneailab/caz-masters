@@ -28,7 +28,7 @@ export async function sendConfirmationEmail(
           You're officially registered for the 15th Annual Caz Masters tournament!
         </p>
         <div style="background: #f0fdf0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <p style="margin: 4px 0;"><strong>Date:</strong> July 4th Weekend, 2026</p>
+          <p style="margin: 4px 0;"><strong>Date:</strong> Friday, July 3rd, 2026</p>
           <p style="margin: 4px 0;"><strong>Location:</strong> Cazenovia Golf Club</p>
           <p style="margin: 4px 0;"><strong>Payment:</strong> ${isPaid ? "Paid - You're all set!" : "Pay day-of at check-in ($150)"}</p>
         </div>

@@ -50,14 +50,9 @@ function NavDropdown({ label, items }: DropdownProps) {
   );
 }
 
-const topLinks = [
-  { href: "/about", label: "About" },
-  { href: "/tournament", label: "Tournament" },
-  { href: "/store", label: "Store" },
-  { href: "/donate", label: "Donate" },
-];
-
-const liveItems = [
+const tournamentItems = [
+  { href: "/info", label: "Information" },
+  { href: "/teams", label: "Teams" },
   { href: "/scoring", label: "Scoring" },
   { href: "/leaderboard", label: "Leaderboard" },
 ];
@@ -66,7 +61,6 @@ const recordBookItems = [
   { href: "/stats", label: "Stats" },
   { href: "/players", label: "Players" },
   { href: "/history", label: "Hall of Fame" },
-  { href: "/gallery", label: "Gallery" },
 ];
 
 export default function Navbar() {
@@ -88,17 +82,12 @@ export default function Navbar() {
 
           {/* Desktop */}
           <div className="hidden lg:flex items-center gap-6">
-            {topLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-white/80 hover:text-white transition-colors text-sm font-semibold"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <NavDropdown label="Live" items={liveItems} />
+            <Link href="/" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Home</Link>
+            <NavDropdown label="Tournament" items={tournamentItems} />
+            <Link href="/store" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Store</Link>
+            <Link href="/donate" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Donate</Link>
             <NavDropdown label="Record Book" items={recordBookItems} />
+            <Link href="/about" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">About</Link>
             {session ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -149,30 +138,21 @@ export default function Navbar() {
         {/* Mobile menu */}
         {open && (
           <div className="lg:hidden pb-4 space-y-1">
-            {topLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="block text-white/80 hover:text-white py-2 font-semibold text-base"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link href="/" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Home</Link>
 
-            {/* Live group */}
+            {/* Tournament group */}
             <button
-              onClick={() => toggleMobileGroup("live")}
+              onClick={() => toggleMobileGroup("tournament")}
               className="flex items-center justify-between w-full text-white/80 hover:text-white py-2 font-semibold text-base"
             >
-              Live
-              <svg className={`w-4 h-4 transition-transform ${mobileExpanded === "live" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              Tournament
+              <svg className={`w-4 h-4 transition-transform ${mobileExpanded === "tournament" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            {mobileExpanded === "live" && (
+            {mobileExpanded === "tournament" && (
               <div className="pl-4 space-y-1">
-                {liveItems.map((item) => (
+                {tournamentItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -184,6 +164,9 @@ export default function Navbar() {
                 ))}
               </div>
             )}
+
+            <Link href="/store" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Store</Link>
+            <Link href="/donate" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Donate</Link>
 
             {/* Record Book group */}
             <button
@@ -209,6 +192,8 @@ export default function Navbar() {
                 ))}
               </div>
             )}
+
+            <Link href="/about" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">About</Link>
 
             {session ? (
               <>

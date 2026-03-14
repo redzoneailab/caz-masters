@@ -10,11 +10,12 @@ export const dynamic = "force-dynamic";
 
 function stablefordPoints(strokes: number, par: number): number {
   const diff = strokes - par;
-  if (diff <= -2) return 4;
-  if (diff === -1) return 3;
-  if (diff === 0) return 2;
-  if (diff === 1) return 1;
-  return 0;
+  if (diff <= -3) return 5; // Albatross or better
+  if (diff === -2) return 4; // Eagle
+  if (diff === -1) return 3; // Birdie
+  if (diff === 0) return 2;  // Par
+  if (diff === 1) return 1;  // Bogey
+  return 0; // Double bogey+
 }
 
 interface TournamentRound {

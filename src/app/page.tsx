@@ -62,7 +62,7 @@ export default function Home() {
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
           <p className="text-2xl sm:text-4xl leading-relaxed text-white font-medium">
             Time to dust off the sticks and practice powering down some beers.
-            18 holes. Best friends. All for charity. You know the deal.
+            18 holes of glory. All for charity. You know the deal.
           </p>
         </div>
       </section>
@@ -73,7 +73,7 @@ export default function Home() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
               <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">WHEN</p>
-              <p className="text-xl sm:text-2xl font-bold text-navy-900">July 4th Weekend, 2026</p>
+              <p className="text-xl sm:text-2xl font-bold text-navy-900">Friday, July 3rd, 2026</p>
             </div>
             <div>
               <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">WHERE</p>

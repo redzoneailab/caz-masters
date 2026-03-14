@@ -7,12 +7,12 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
           <div>
             <p className="text-white font-black text-lg uppercase tracking-wider">The Caz Masters</p>
-            <p className="text-sm mt-1">Cazenovia Golf Club &middot; July 4th Weekend</p>
+            <p className="text-sm mt-1">Cazenovia Golf Club &middot; Friday, July 3rd</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-8">
             <div className="flex flex-col gap-2 text-sm font-medium">
               <Link href="/about" className="hover:text-white transition-colors">About</Link>
-              <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
+              <Link href="/info" className="hover:text-white transition-colors">Information</Link>
               <Link href="/register" className="hover:text-gold-400 transition-colors">Register</Link>
             </div>
             <div className="flex flex-col gap-2 text-sm font-medium">

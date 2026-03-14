@@ -263,6 +263,7 @@ model AfterPartyRegistration {
   name            String
   email           String   @unique
   numGuests       Int      @default(1)
+  numKids         Int      @default(0)
   totalAmount     Int
   paymentMethod   String
   paymentStatus   String   @default("unpaid")

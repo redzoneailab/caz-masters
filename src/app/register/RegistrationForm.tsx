@@ -9,9 +9,6 @@ interface FormData {
   phone: string;
   shirtSize: string;
   genderFlight: string;
-  teamPreference: string;
-  returningPlayer: boolean;
-  dietaryNeeds: string;
 }
 
 const initialForm: FormData = {
@@ -20,9 +17,6 @@ const initialForm: FormData = {
   phone: "",
   shirtSize: "",
   genderFlight: "",
-  teamPreference: "",
-  returningPlayer: false,
-  dietaryNeeds: "",
 };
 
 export default function RegistrationForm() {
@@ -33,6 +27,7 @@ export default function RegistrationForm() {
   // After party state
   const [addAfterParty, setAddAfterParty] = useState(false);
   const [afterPartyGuests, setAfterPartyGuests] = useState(1);
+  const [afterPartyKids, setAfterPartyKids] = useState(0);
 
   function update(field: keyof FormData, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -53,7 +48,7 @@ export default function RegistrationForm() {
         body: JSON.stringify({
           ...form,
           paymentMethod,
-          afterParty: addAfterParty ? { numGuests: afterPartyGuests } : null,
+          afterParty: addAfterParty ? { numGuests: afterPartyGuests, numKids: afterPartyKids } : null,
         }),
       });
 
@@ -159,41 +154,6 @@ export default function RegistrationForm() {
         </div>
       </div>
 
-      <div>
-        <label className={labelClass}>Team Preference <span className="text-navy-400 normal-case font-normal tracking-normal">(optional)</span></label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Who do you want to play with?"
-          value={form.teamPreference}
-          onChange={(e) => update("teamPreference", e.target.value)}
-        />
-      </div>
-
-      <div>
-        <label className={labelClass}>Dietary Needs <span className="text-navy-400 normal-case font-normal tracking-normal">(optional)</span></label>
-        <input
-          type="text"
-          className={inputClass}
-          placeholder="Allergies, vegetarian, etc."
-          value={form.dietaryNeeds}
-          onChange={(e) => update("dietaryNeeds", e.target.value)}
-        />
-      </div>
-
-      <div className="flex items-center gap-3 py-1">
-        <input
-          type="checkbox"
-          id="returning"
-          className="h-5 w-5 rounded border-navy-300 text-gold-500 focus:ring-gold-400"
-          checked={form.returningPlayer}
-          onChange={(e) => update("returningPlayer", e.target.checked)}
-        />
-        <label htmlFor="returning" className="text-navy-600 font-medium">
-          I&apos;ve played in The Caz Masters before
-        </label>
-      </div>
-
       {/* After Party Upsell */}
       <div className="border-2 border-navy-100 rounded-xl p-5 bg-navy-50/50">
         <div className="flex items-start gap-3">
@@ -215,35 +175,59 @@ export default function RegistrationForm() {
               {TOURNAMENT.afterPartyIncludes.join(", ")}
             </p>
             <p className="text-gold-600 font-bold text-sm mt-1">
-              ${TOURNAMENT.afterPartyPrice}/person
+              ${TOURNAMENT.afterPartyPrice}/person &middot; Kids are free
             </p>
           </div>
         </div>
 
         {addAfterParty && (
-          <div className="mt-4 pl-8">
-            <label className="block text-sm font-semibold text-navy-700 mb-2">
-              How many guests? <span className="font-normal text-navy-400">(including yourself)</span>
-            </label>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setAfterPartyGuests(Math.max(1, afterPartyGuests - 1))}
-                className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
-              >
-                -
-              </button>
-              <span className="text-xl font-bold text-navy-900 w-8 text-center">{afterPartyGuests}</span>
-              <button
-                type="button"
-                onClick={() => setAfterPartyGuests(Math.min(20, afterPartyGuests + 1))}
-                className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
-              >
-                +
-              </button>
-              <span className="text-sm text-navy-500">
-                = ${afterPartyTotal}
-              </span>
+          <div className="mt-4 pl-8 space-y-3">
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 mb-2">
+                Paying adults <span className="font-normal text-navy-400">(including yourself)</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAfterPartyGuests(Math.max(1, afterPartyGuests - 1))}
+                  className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+                >
+                  -
+                </button>
+                <span className="text-xl font-bold text-navy-900 w-8 text-center">{afterPartyGuests}</span>
+                <button
+                  type="button"
+                  onClick={() => setAfterPartyGuests(Math.min(20, afterPartyGuests + 1))}
+                  className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+                >
+                  +
+                </button>
+                <span className="text-sm text-navy-500">
+                  = ${afterPartyTotal}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 mb-2">
+                Kids <span className="font-normal text-navy-400">(free — just need a headcount)</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAfterPartyKids(Math.max(0, afterPartyKids - 1))}
+                  className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+                >
+                  -
+                </button>
+                <span className="text-xl font-bold text-navy-900 w-8 text-center">{afterPartyKids}</span>
+                <button
+                  type="button"
+                  onClick={() => setAfterPartyKids(Math.min(20, afterPartyKids + 1))}
+                  className="w-9 h-9 rounded-lg border-2 border-navy-200 text-navy-600 hover:bg-navy-100 flex items-center justify-center text-lg font-bold"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
         )}

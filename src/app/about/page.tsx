@@ -97,36 +97,45 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Hall of Champions */}
+      {/* Photo Gallery Preview */}
       <section className="py-16 sm:py-24 bg-navy-900 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="text-3xl sm:text-4xl font-black text-center uppercase mb-4">
-            Hall of Fame
+            Through the Years
           </h2>
           <p className="text-center text-navy-300 mb-12 text-lg">
-            Legends of the game. Or at least legends of this game.
+            14 years of traditions, triumphs, and questionable fashion choices.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { src: "/images/champion-2015.png", label: "2015 Champion" },
-              { src: "/images/champion-2016.jpg", label: "2016 Champion" },
-              { src: "/images/champion-2017.png", label: "2017 Champion" },
-              { src: "/images/champion-2018.png", label: "2018 Champion" },
-              { src: "/images/team-winner-2019.jpg", label: "2019 Team Champs" },
-              { src: "/images/new-champ.jpg", label: "Reigning Champion" },
-            ].map((champ) => (
-              <div key={champ.src}>
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-navy-600 group">
+              { src: "/images/champion-2015.png", label: "2015" },
+              { src: "/images/champion-2016.jpg", label: "2016" },
+              { src: "/images/champion-2017.png", label: "2017" },
+              { src: "/images/champion-2018.png", label: "2018" },
+              { src: "/images/team-winner-2019.jpg", label: "2019" },
+              { src: "/images/group-2018.jpg", label: "The Crew" },
+            ].map((photo) => (
+              <div key={photo.src} className="group">
+                <div className="relative aspect-square rounded-xl overflow-hidden border border-navy-600">
                   <Image
-                    src={champ.src}
-                    alt={champ.label}
+                    src={photo.src}
+                    alt={photo.label}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <p className="absolute bottom-2 left-3 text-white/90 font-bold text-sm">{photo.label}</p>
                 </div>
-                <p className="text-gold-400 font-bold text-lg text-center mt-3">{champ.label}</p>
               </div>
             ))}
+          </div>
+          <div className="text-center mt-10">
+            <Link
+              href="/gallery"
+              className="inline-block bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-8 py-3 rounded-xl transition-colors uppercase tracking-wider"
+            >
+              View All Photos
+            </Link>
           </div>
         </div>
       </section>

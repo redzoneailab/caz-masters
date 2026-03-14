@@ -297,7 +297,7 @@ export default function LeaderboardView() {
             {tab === "team" && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between px-2 py-2 text-navy-400 text-xs">
-                  <span>Eagle=4 &middot; Birdie=3 &middot; Par=2 &middot; Bogey=1 &middot; Double+=0</span>
+                  <span>Albatross=5 &middot; Eagle=4 &middot; Birdie=3 &middot; Par=2 &middot; Bogey=1 &middot; Double+=0</span>
                 </div>
                 {teamStableford.length === 0 ? (
                   <p className="text-navy-500 text-center py-12">No team scores yet.</p>

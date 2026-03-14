@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getTeeBoxName, isMensFlight } from "@/lib/tees";
 
@@ -10,11 +11,12 @@ export const dynamic = "force-dynamic";
 
 function stablefordPoints(strokes: number, par: number): number {
   const diff = strokes - par;
-  if (diff <= -2) return 4;
-  if (diff === -1) return 3;
-  if (diff === 0) return 2;
-  if (diff === 1) return 1;
-  return 0;
+  if (diff <= -3) return 5; // Albatross or better
+  if (diff === -2) return 4; // Eagle
+  if (diff === -1) return 3; // Birdie
+  if (diff === 0) return 2;  // Par
+  if (diff === 1) return 1;  // Bogey
+  return 0; // Double bogey+
 }
 
 const CATEGORIES: Record<string, string> = {
@@ -23,6 +25,23 @@ const CATEGORIES: Record<string, string> = {
   team: "Winning Team",
   shotgun_champion: "Shotgun Champion",
   special_award: "Special Award",
+};
+
+// Champion photos by year (static assets)
+const CHAMPION_PHOTOS: Record<number, { src: string; label: string }[]> = {
+  2015: [{ src: "/images/champion-2015.png", label: "2015 Champion" }],
+  2016: [{ src: "/images/champion-2016.jpg", label: "2016 Champion" }],
+  2017: [{ src: "/images/champion-2017.png", label: "2017 Champion" }],
+  2018: [{ src: "/images/champion-2018.png", label: "2018 Champion" }],
+  2019: [{ src: "/images/team-winner-2019.jpg", label: "2019 Team Champs" }],
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  mens_individual: "\uD83C\uDFC6",
+  womens_individual: "\uD83C\uDFC6",
+  team: "\uD83E\uDD4A",
+  shotgun_champion: "\uD83C\uDF7A",
+  special_award: "\u2B50",
 };
 
 interface YearResult {
@@ -237,64 +256,140 @@ export default async function HistoryPage() {
 
   return (
     <>
-      <section className="bg-navy-950 text-white py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-4xl font-black uppercase tracking-tight">Hall of Fame</h1>
-          <p className="mt-3 text-navy-300 max-w-2xl mx-auto">
-            Celebrating the champions of The Caz Masters at Cazenovia Golf Club.
+      {/* Hero */}
+      <section className="relative bg-navy-950 text-white py-16 sm:py-20 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <Image src="/images/group-2018.jpg" alt="" fill className="object-cover" />
+        </div>
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-gold-400 font-bold text-sm uppercase tracking-widest mb-3">
+            The Caz Masters
+          </p>
+          <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight">Hall of Fame</h1>
+          <p className="mt-4 text-navy-300 max-w-2xl mx-auto text-lg">
+            Legends of the game. Or at least legends of this game.
           </p>
         </div>
       </section>
 
-      <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      {/* Reigning Champion Spotlight */}
+      <section className="bg-navy-900 text-white py-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold-400/30 shadow-2xl">
+              <Image
+                src="/images/new-champ.jpg"
+                alt="Reigning Champion"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="text-gold-400 font-bold text-sm uppercase tracking-widest mb-2">
+                Reigning Champion
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-black uppercase mb-4">
+                The Green Jacket Holder
+              </h2>
+              <p className="text-navy-300 text-lg leading-relaxed">
+                Every year, one player rises above the rest and earns the right to wear the
+                green jacket. Their name goes up on the wall. Their legend lives forever.
+                Or at least until next July 3rd.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Year-by-Year Results */}
+      <section className="py-12 sm:py-16 bg-[#F0F4F8]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl font-black text-navy-900 uppercase mb-8 text-center">
+            Champions by Year
+          </h2>
           {allYears.length === 0 ? (
             <p className="text-center text-navy-400 py-12">
               Hall of Fame entries coming soon. Check back after the admin adds historical results.
             </p>
           ) : (
             <div className="space-y-8">
-              {allYears.map((yearData) => (
-                <div key={yearData.year} className="border border-navy-100 rounded-xl overflow-hidden">
-                  <div className="bg-navy-50 px-6 py-4 border-b border-navy-100">
-                    <h2 className="text-xl font-bold text-navy-900">
-                      {yearData.year}
-                      <span className="text-sm font-normal text-navy-500 ml-2">
+              {allYears.map((yearData) => {
+                const photos = CHAMPION_PHOTOS[yearData.year];
+                return (
+                  <div
+                    key={yearData.year}
+                    className="bg-white rounded-2xl overflow-hidden border border-navy-100 shadow-sm"
+                  >
+                    {/* Year header */}
+                    <div className="bg-navy-950 text-white px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-2xl font-black">
+                        {yearData.year}
+                      </h3>
+                      <span className="text-gold-400 font-bold text-sm uppercase tracking-wider">
                         {ordinal(yearData.edition)} Annual
                       </span>
-                      {yearData.fromScores && (
-                        <span className="text-xs font-normal text-gold-600 ml-2">
-                          Auto-generated from scores
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-                  <div className="p-6 grid sm:grid-cols-2 gap-4">
-                    {(["mens_individual", "womens_individual", "team", "shotgun_champion", "special_award"] as const).map((cat) => {
-                      const catEntries = yearData.entries.filter((e) => e.category === cat);
-                      if (catEntries.length === 0) return null;
-                      return (
-                        <div key={cat} className="space-y-1">
-                          <p className="text-xs font-bold text-gold-500 uppercase tracking-wider">
-                            {CATEGORIES[cat]}
-                          </p>
-                          {catEntries.map((entry, i) => (
-                            <div key={i}>
-                              <p className="text-navy-900 font-semibold">{entry.winnerName}</p>
-                              {entry.teamName && (
-                                <p className="text-navy-500 text-sm">{entry.teamName}</p>
-                              )}
-                              {entry.description && (
-                                <p className="text-navy-400 text-sm">{entry.description}</p>
-                              )}
+                    </div>
+
+                    <div className={`${photos ? "grid md:grid-cols-5" : ""}`}>
+                      {/* Photo column */}
+                      {photos && (
+                        <div className="md:col-span-2 p-4">
+                          {photos.map((photo) => (
+                            <div key={photo.src} className="relative aspect-[4/3] rounded-xl overflow-hidden">
+                              <Image
+                                src={photo.src}
+                                alt={photo.label}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                              <p className="absolute bottom-3 left-3 text-white font-bold text-sm">
+                                {photo.label}
+                              </p>
                             </div>
                           ))}
                         </div>
-                      );
-                    })}
+                      )}
+
+                      {/* Awards column */}
+                      <div className={`${photos ? "md:col-span-3" : ""} p-6`}>
+                        {yearData.fromScores && (
+                          <p className="text-xs text-gold-600 font-medium mb-4 uppercase tracking-wider">
+                            Auto-generated from scores
+                          </p>
+                        )}
+                        <div className="grid sm:grid-cols-2 gap-5">
+                          {(["mens_individual", "womens_individual", "team", "shotgun_champion", "special_award"] as const).map((cat) => {
+                            const catEntries = yearData.entries.filter((e) => e.category === cat);
+                            if (catEntries.length === 0) return null;
+                            return (
+                              <div key={cat} className="flex gap-3">
+                                <span className="text-xl mt-0.5">{CATEGORY_ICONS[cat]}</span>
+                                <div>
+                                  <p className="text-xs font-bold text-gold-500 uppercase tracking-wider mb-1">
+                                    {CATEGORIES[cat]}
+                                  </p>
+                                  {catEntries.map((entry, i) => (
+                                    <div key={i}>
+                                      <p className="text-navy-900 font-bold text-lg leading-tight">{entry.winnerName}</p>
+                                      {entry.teamName && (
+                                        <p className="text-navy-500 text-sm">{entry.teamName}</p>
+                                      )}
+                                      {entry.description && (
+                                        <p className="text-navy-400 text-sm">{entry.description}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

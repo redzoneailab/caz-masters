@@ -58,7 +58,7 @@ export default async function ConfirmationPage({
             Back to Home
           </Link>
           <Link
-            href="/tournament"
+            href="/info"
             className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-6 py-3 rounded-xl transition-colors"
           >
             Read the Rules

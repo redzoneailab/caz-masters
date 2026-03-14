@@ -13,9 +13,6 @@ export async function POST(req: NextRequest) {
       phone,
       shirtSize,
       genderFlight,
-      teamPreference,
-      returningPlayer,
-      dietaryNeeds,
       paymentMethod,
       afterParty,
     } = body;
@@ -76,9 +73,9 @@ export async function POST(req: NextRequest) {
         phone,
         shirtSize,
         genderFlight,
-        teamPreference: teamPreference || null,
-        returningPlayer: returningPlayer || false,
-        dietaryNeeds: dietaryNeeds || null,
+        teamPreference: null,
+        returningPlayer: false,
+        dietaryNeeds: null,
         tournamentId: tournament.id,
       },
     });
@@ -87,6 +84,7 @@ export async function POST(req: NextRequest) {
     let afterPartyReg = null;
     if (afterParty && afterParty.numGuests > 0) {
       const numGuests = Math.min(Math.max(1, afterParty.numGuests), 20);
+      const numKids = Math.min(Math.max(0, afterParty.numKids || 0), 20);
       // Check for existing after party registration
       const existingAP = await prisma.afterPartyRegistration.findUnique({ where: { email } });
       if (!existingAP) {
@@ -95,6 +93,7 @@ export async function POST(req: NextRequest) {
             name: fullName,
             email,
             numGuests,
+            numKids,
             totalAmount: numGuests * TOURNAMENT.afterPartyPriceCents,
             paymentMethod: paymentMethod === "stripe" ? "stripe" : "at_door",
             paymentStatus: "unpaid",
