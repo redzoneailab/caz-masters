@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 interface DropdownProps {
   label: string;
@@ -104,12 +104,12 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => signIn("google")}
+              <Link
+                href="/auth/signin"
                 className="text-white/80 hover:text-white transition-colors text-sm font-semibold"
               >
                 Sign In
-              </button>
+              </Link>
             )}
             <Link
               href="/register"
@@ -212,12 +212,13 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => { signIn("google"); setOpen(false); }}
+              <Link
+                href="/auth/signin"
+                onClick={() => setOpen(false)}
                 className="block text-white/80 hover:text-white py-2 font-semibold text-base"
               >
-                Sign In with Google
-              </button>
+                Sign In
+              </Link>
             )}
             <Link
               href="/register"

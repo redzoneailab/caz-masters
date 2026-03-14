@@ -1,48 +1,54 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import EmailProvider from "next-auth/providers/email";
 import { prisma } from "./prisma";
+import { CazMastersAdapter } from "./auth-adapter";
+import { sendMagicLinkEmail } from "./resend";
 
 export const authOptions: NextAuthOptions = {
+  adapter: CazMastersAdapter(),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    EmailProvider({
+      sendVerificationRequest: async ({ identifier: email, url }) => {
+        await sendMagicLinkEmail(email, url);
+      },
     }),
   ],
   session: { strategy: "jwt" },
+  pages: {
+    signIn: "/auth/signin",
+    verifyRequest: "/auth/verify-request",
+  },
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google" && user.email) {
-        await prisma.userAccount.upsert({
-          where: { googleId: account.providerAccountId },
-          update: { name: user.name || "", avatarUrl: user.image || null },
-          create: {
-            googleId: account.providerAccountId,
-            email: user.email,
-            name: user.name || "",
-            avatarUrl: user.image || null,
-          },
-        });
+      if (!user.email) return true;
 
-        // Link any existing Player records to this account
-        const userAccount = await prisma.userAccount.findUnique({
-          where: { email: user.email },
-        });
-        if (userAccount) {
-          await prisma.player.updateMany({
-            where: { email: user.email, userAccountId: null },
-            data: { userAccountId: userAccount.id },
-          });
-        }
+      // Update avatar from Google profile
+      if (account?.provider === "google" && user.image) {
+        await prisma.userAccount
+          .update({
+            where: { id: user.id },
+            data: { avatarUrl: user.image },
+          })
+          .catch(() => {});
       }
+
+      // Link any unlinked Player records to this account
+      await prisma.player.updateMany({
+        where: { email: user.email, userAccountId: null },
+        data: { userAccountId: user.id },
+      });
+
       return true;
     },
-    async jwt({ token, account }) {
-      if (account?.provider === "google") {
-        const userAccount = await prisma.userAccount.findUnique({
-          where: { googleId: account.providerAccountId },
-        });
-        token.userAccountId = userAccount?.id;
+    async jwt({ token, user }) {
+      if (user) {
+        token.userAccountId = user.id;
       }
       return token;
     },

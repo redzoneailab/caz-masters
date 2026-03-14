@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface TeamMember {
@@ -154,12 +155,12 @@ export default function TeamsBoard({ teams, freeAgents, teamsLocked, tournamentI
                 </button>
               )
             ) : (
-              <button
-                onClick={() => signIn("google")}
+              <Link
+                href="/auth/signin"
                 className="bg-navy-800 hover:bg-navy-900 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors"
               >
                 Sign in to Create or Join a Team
-              </button>
+              </Link>
             )}
           </div>
         )}
