@@ -117,8 +117,10 @@ export default async function HistoryPage() {
     }
 
     function getParForPlayer(holeNumber: number, genderFlight: string): number {
-      const teeName = getTeeBoxName(holeNumber, genderFlight);
-      return teeMap.get(holeNumber)?.get(teeName) || 4;
+      const holeTees = teeMap.get(holeNumber);
+      const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
+      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+      return holeTees?.get(teeName) || 4;
     }
 
     // Individual standings

@@ -18,6 +18,7 @@ model Tournament {
   teamsLocked        Boolean     @default(false)
   entryFee           Int         @default(15000)
   numHoles           Int         @default(18)
+  shotgunStart       Boolean     @default(true)
   finalized          Boolean     @default(false)
   courseId            String?
   course             Course?     @relation(fields: [courseId], references: [id])

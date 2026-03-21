@@ -54,8 +54,10 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
     }
 
     function getParForHole(holeNumber: number, genderFlight: string): number {
-      const teeName = getTeeBoxName(holeNumber, genderFlight);
-      return teeMap.get(holeNumber)?.get(teeName) || 4;
+      const holeTees = teeMap.get(holeNumber);
+      const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
+      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+      return holeTees?.get(teeName) || 4;
     }
 
     const scores = player.scores.map((s) => ({

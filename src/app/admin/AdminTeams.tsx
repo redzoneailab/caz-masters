@@ -22,6 +22,8 @@ export default function AdminTeams({ password }: { password: string }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [freeAgents, setFreeAgents] = useState<TeamMember[]>([]);
   const [teamsLocked, setTeamsLocked] = useState(false);
+  const [shotgunStart, setShotgunStart] = useState(true);
+  const [numHoles, setNumHoles] = useState(18);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -41,6 +43,8 @@ export default function AdminTeams({ password }: { password: string }) {
       setTeams(data.teams);
       setFreeAgents(data.freeAgents);
       setTeamsLocked(data.teamsLocked);
+      setShotgunStart(data.shotgunStart ?? true);
+      setNumHoles(data.numHoles ?? 18);
     } catch {
       setError("Failed to load teams");
     } finally {
@@ -49,6 +53,26 @@ export default function AdminTeams({ password }: { password: string }) {
   }, [password]);
 
   useEffect(() => { fetchTeams(); }, [fetchTeams]);
+
+  // Build hole assignment map for shotgun grid
+  const holeAssignments = new Map<number, Team[]>();
+  for (let h = 1; h <= numHoles; h++) holeAssignments.set(h, []);
+  for (const team of teams) {
+    if (team.startingHole) {
+      const arr = holeAssignments.get(team.startingHole) || [];
+      arr.push(team);
+      holeAssignments.set(team.startingHole, arr);
+    }
+  }
+
+  const unassignedTeams = teams.filter((t) => !t.startingHole);
+
+  function getHoleStatus(hole: number): "empty" | "single" | "full" {
+    const count = holeAssignments.get(hole)?.length || 0;
+    if (count === 0) return "empty";
+    if (count === 1) return "single";
+    return "full";
+  }
 
   async function toggleTeamsLocked() {
     try {
@@ -159,6 +183,62 @@ export default function AdminTeams({ password }: { password: string }) {
         </div>
       </div>
 
+      {/* Shotgun Start Assignment Grid */}
+      {shotgunStart && (
+        <div>
+          <h3 className="font-bold text-navy-900 mb-3">Shotgun Start Layout</h3>
+          {unassignedTeams.length > 0 && (
+            <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-lg px-4 py-2.5 text-sm mb-3">
+              {unassignedTeams.length} team{unassignedTeams.length !== 1 ? "s" : ""} without a starting hole:{" "}
+              {unassignedTeams.map((t) => t.name).join(", ")}
+            </div>
+          )}
+          <div className="bg-white rounded-xl border border-navy-100 overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-px bg-navy-100">
+              {Array.from({ length: numHoles }, (_, i) => i + 1).map((hole) => {
+                const assigned = holeAssignments.get(hole) || [];
+                const status = getHoleStatus(hole);
+                return (
+                  <div
+                    key={hole}
+                    className={`bg-white p-3 min-h-[80px] ${
+                      status === "full" ? "ring-1 ring-inset ring-gold-400" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-navy-900">Hole {hole}</span>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          status === "full"
+                            ? "bg-gold-400"
+                            : status === "single"
+                            ? "bg-green-400"
+                            : "bg-navy-200"
+                        }`}
+                      />
+                    </div>
+                    {assigned.length > 0 ? (
+                      <div className="space-y-1">
+                        {assigned.map((t) => (
+                          <p key={t.id} className="text-xs text-navy-700 truncate">{t.name}</p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-navy-300 italic">Open</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center gap-4 mt-2 text-xs text-navy-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-navy-200" /> Open</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400" /> 1 team</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gold-400" /> 2 teams (max)</span>
+          </div>
+        </div>
+      )}
+
       {/* Teams */}
       <div className="space-y-4">
         {teams.map((team) => (
@@ -184,16 +264,26 @@ export default function AdminTeams({ password }: { password: string }) {
                   <option value={4}>Max 4</option>
                   <option value={5}>Max 5</option>
                 </select>
-                <select
-                  value={team.startingHole ?? ""}
-                  onChange={(e) => updateStartingHole(team.id, e.target.value ? parseInt(e.target.value) : null)}
-                  className="text-xs border border-navy-200 rounded px-2 py-1"
-                >
-                  <option value="">Start hole...</option>
-                  {Array.from({ length: 18 }, (_, i) => i + 1).map((h) => (
-                    <option key={h} value={h}>Hole {h}</option>
-                  ))}
-                </select>
+                {shotgunStart && (
+                  <select
+                    value={team.startingHole ?? ""}
+                    onChange={(e) => updateStartingHole(team.id, e.target.value ? parseInt(e.target.value) : null)}
+                    className="text-xs border border-navy-200 rounded px-2 py-1"
+                  >
+                    <option value="">Start hole...</option>
+                    {Array.from({ length: numHoles }, (_, i) => i + 1).map((h) => {
+                      const count = holeAssignments.get(h)?.length || 0;
+                      // If this team is already on this hole, don't count it toward the limit
+                      const otherCount = team.startingHole === h ? count - 1 : count;
+                      const full = otherCount >= 2;
+                      return (
+                        <option key={h} value={h} disabled={full}>
+                          Hole {h}{full ? " (full)" : otherCount === 1 ? " (1 team)" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
                 <button
                   onClick={() => toggleLockTeam(team.id, !team.locked)}
                   className="text-xs bg-navy-50 text-navy-600 hover:bg-navy-100 px-3 py-1 rounded transition-colors"

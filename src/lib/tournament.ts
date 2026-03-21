@@ -9,7 +9,7 @@ export const TOURNAMENT = {
   entryFee: 150, // dollars
   entryFeeCents: 15000,
   shotgunBeerPrice: 5, // dollars per beer
-  numHoles: 9,
+  numHoles: 18,
   afterPartyPrice: 25, // dollars per person
   afterPartyPriceCents: 2500,
   afterPartyVenue: "The Brae Loch Inn",

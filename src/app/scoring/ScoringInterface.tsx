@@ -171,12 +171,14 @@ export default function ScoringInterface() {
   }
 
   function getParForPlayer(hole: Hole, genderFlight: string): number {
-    const teeName = getTeeBoxName(hole.holeNumber, genderFlight);
+    const teeNames = (hole.teeBoxes || []).map((t) => t.name);
+    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames);
     return (hole.teeBoxes || []).find((t) => t.name === teeName)?.par || 4;
   }
 
   function getYardageForPlayer(hole: Hole, genderFlight: string): number | null {
-    const teeName = getTeeBoxName(hole.holeNumber, genderFlight);
+    const teeNames = (hole.teeBoxes || []).map((t) => t.name);
+    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames);
     return (hole.teeBoxes || []).find((t) => t.name === teeName)?.yardage ?? null;
   }
 

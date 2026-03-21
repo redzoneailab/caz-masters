@@ -13,11 +13,14 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { registrationOpen } = body;
+  const data: Record<string, unknown> = {};
+
+  if (typeof body.registrationOpen === "boolean") data.registrationOpen = body.registrationOpen;
+  if (typeof body.shotgunStart === "boolean") data.shotgunStart = body.shotgunStart;
 
   const tournament = await prisma.tournament.update({
     where: { year: TOURNAMENT.year },
-    data: { registrationOpen },
+    data,
   });
 
   return NextResponse.json({ tournament });

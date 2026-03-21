@@ -37,6 +37,8 @@ export async function GET(req: NextRequest) {
     freeAgents,
     teamsLocked: tournament?.teamsLocked || false,
     tournamentId: tournament?.id,
+    shotgunStart: tournament?.shotgunStart ?? true,
+    numHoles: tournament?.numHoles ?? 18,
   });
 }
 

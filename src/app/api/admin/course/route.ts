@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     course: tournament?.course || null,
     tournamentId: tournament?.id,
     numHoles: tournament?.numHoles || 18,
+    shotgunStart: tournament?.shotgunStart ?? true,
   });
 }
 

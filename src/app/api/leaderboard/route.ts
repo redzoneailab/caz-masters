@@ -41,6 +41,7 @@ export async function GET() {
     }
 
   const numHoles = tournament.numHoles;
+  const shotgunStart = tournament.shotgunStart ?? true;
   const holes = tournament.course.holes.filter((h) => h.holeNumber <= numHoles);
 
   // Build tee box lookup: holeNumber -> teeName -> { par, yardage }
@@ -54,8 +55,10 @@ export async function GET() {
   }
 
   function getParForPlayer(holeNumber: number, genderFlight: string): number {
-    const teeName = getTeeBoxName(holeNumber, genderFlight);
-    return teeMap.get(holeNumber)?.get(teeName)?.par || 4;
+    const holeTees = teeMap.get(holeNumber);
+    const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
+    const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+    return holeTees?.get(teeName)?.par || 4;
   }
 
   // Get all scores + player data (include team for startingHole)
@@ -104,7 +107,7 @@ export async function GET() {
       0
     );
     const beerCount = playerScores.filter((s) => s.shotgunBeer).length;
-    const startingHole = player.team?.startingHole ?? 1;
+    const startingHole = shotgunStart ? (player.team?.startingHole ?? 1) : 1;
     const finished = holesCompleted >= numHoles;
 
     const scoresByHole: Record<number, { strokes: number; par: number; shotgunBeer: boolean; rehit: boolean }> = {};
@@ -181,7 +184,7 @@ export async function GET() {
       totalPoints += points.reduce((s, p) => s + p, 0);
     }
 
-    const startingHole = team.startingHole ?? 1;
+    const startingHole = shotgunStart ? (team.startingHole ?? 1) : 1;
     const finished = holesCompleted >= numHoles;
 
     return {

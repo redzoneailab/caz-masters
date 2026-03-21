@@ -72,9 +72,12 @@ export async function POST(req: NextRequest) {
       })),
     }));
 
+  const shotgunStart = tournament.shotgunStart ?? true;
+  const teamStartingHole = shotgunStart ? (team?.startingHole ?? 1) : 1;
+
   return NextResponse.json({
     scorer: { id: player.id, name: player.fullName },
-    team: { id: team?.id, name: team?.name, startingHole: team?.startingHole ?? 1 },
+    team: { id: team?.id, name: team?.name, startingHole: teamStartingHole },
     players: team?.members || [],
     holes,
     numHoles: tournament.numHoles,
