@@ -6,27 +6,20 @@ function checkAuth(req: NextRequest) {
   return req.headers.get("authorization") === `Bearer ${process.env.ADMIN_PASSWORD}`;
 }
 
-// The API returns tees split by gender, each containing an array of tee box objects.
-// Each tee box has a name and a holes array with per-hole par/yardage/handicap.
+// API response shape from golfcourseapi.com:
 //
-// Example structure:
-// {
-//   course: {
-//     id, club_name, course_name, location: { city, state, country },
-//     tees: {
-//       male: [
-//         { tee_name: "White", holes: [{ hole_number: 1, par: 4, yardage: 345, handicap: 7 }, ...] },
-//         { tee_name: "Blue",  holes: [...] }
-//       ],
-//       female: [
-//         { tee_name: "Red", holes: [...] }
-//       ]
-//     }
-//   }
+// GET /v1/courses/{id} → { course: { id, club_name, course_name, location, tees } }
+//
+// tees: {
+//   male: [{ tee_name: "White", holes: [{ par: 4, yardage: 357, handicap: 13 }, ...] }, ...],
+//   female: [{ tee_name: "Red", holes: [{ par: 5, yardage: 440, handicap: 10 }, ...] }, ...]
 // }
+//
+// Holes are positional arrays — NO hole_number field. Index 0 = hole 1.
+// Same tee_name can appear in both male and female with DIFFERENT par values
+// (e.g., "White" male par 4 vs "White" female par 5 on same hole).
 
 interface ApiHole {
-  hole_number: number;
   par: number;
   yardage: number | null;
   handicap?: number | null;
@@ -35,60 +28,65 @@ interface ApiHole {
 interface ApiTeeSet {
   tee_name: string;
   colour?: string;
-  course_rating?: number;
-  slope_rating?: number;
+  number_of_holes?: number;
+  par_total?: number;
+  total_yards?: number;
   holes: ApiHole[];
 }
 
-interface ApiCourseDetail {
-  course: {
-    id: string;
-    club_name: string;
-    course_name: string;
-    location?: {
-      city?: string;
-      state?: string;
-      country?: string;
-    };
-    tees: {
-      male?: ApiTeeSet[];
-      female?: ApiTeeSet[];
-    };
-  };
-}
-
 /**
- * Flatten the gender-split tee structure into a single map:
+ * Flatten the gender-split tee structure into:
  *   holeNumber -> teeBoxName -> { par, yardage }
  *
- * If both male and female sides share the same tee name, we keep both
- * (they'll merge by unique constraint on [courseHoleId, name]).
- * If a tee name appears only under female, it's still a valid tee box.
+ * Hole number is derived from array index (0-based → 1-based).
+ * If the same tee_name appears in both male and female with different
+ * par/yardage on any hole, the female version gets a " (W)" suffix.
  */
 function buildHoleMap(
   tees: { male?: ApiTeeSet[]; female?: ApiTeeSet[] }
 ): Map<number, Map<string, { par: number; yardage: number | null }>> {
   const holeMap = new Map<number, Map<string, { par: number; yardage: number | null }>>();
 
-  function processTeeSet(teeSet: ApiTeeSet) {
-    const teeName = teeSet.tee_name || teeSet.colour || "Default";
-    for (const h of teeSet.holes) {
-      if (!h.hole_number || h.hole_number < 1) continue;
-      let tees = holeMap.get(h.hole_number);
-      if (!tees) {
-        tees = new Map();
-        holeMap.set(h.hole_number, tees);
+  function processTeeSet(teeSet: ApiTeeSet, nameOverride?: string) {
+    const teeName = nameOverride || teeSet.tee_name || teeSet.colour || "Default";
+    for (let i = 0; i < teeSet.holes.length; i++) {
+      const h = teeSet.holes[i];
+      const holeNumber = i + 1;
+      let holeTees = holeMap.get(holeNumber);
+      if (!holeTees) {
+        holeTees = new Map();
+        holeMap.set(holeNumber, holeTees);
       }
-      // First writer wins — if the same tee name appears in both male and female,
-      // the male set takes precedence (they're usually identical for shared tees).
-      if (!tees.has(teeName)) {
-        tees.set(teeName, { par: h.par, yardage: h.yardage ?? null });
+      if (!holeTees.has(teeName)) {
+        holeTees.set(teeName, { par: h.par, yardage: h.yardage ?? null });
       }
     }
   }
 
+  // Collect male tee names for collision detection
+  const maleNames = new Set((tees.male || []).map((t) => t.tee_name || t.colour || "Default"));
+
+  // Process male tees first
   for (const ts of tees.male || []) processTeeSet(ts);
-  for (const ts of tees.female || []) processTeeSet(ts);
+
+  // Process female tees — rename if colliding with male AND data differs
+  for (const ts of tees.female || []) {
+    const femaleName = ts.tee_name || ts.colour || "Default";
+    if (maleNames.has(femaleName)) {
+      // Check if any hole differs between this female tee and the already-inserted male version
+      const differs = ts.holes.some((fh, i) => {
+        const holeNumber = i + 1;
+        const existing = holeMap.get(holeNumber)?.get(femaleName);
+        return existing && (existing.par !== fh.par || existing.yardage !== (fh.yardage ?? null));
+      });
+      if (differs) {
+        processTeeSet(ts, `${femaleName} (W)`);
+      }
+      // If identical, skip — the male version already covers it
+    } else {
+      processTeeSet(ts);
+    }
+  }
 
   return holeMap;
 }
@@ -120,19 +118,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch course details" }, { status: 502 });
     }
 
-    const data: ApiCourseDetail = await res.json();
-    const c = data.course;
-    if (!c) {
+    const data = await res.json();
+
+    // Detail endpoint wraps in { course: {...} }
+    const c = data.course || data;
+    if (!c || !c.tees) {
+      console.error("Golf course API: unexpected response shape, keys:", Object.keys(data));
       return NextResponse.json({ error: "Invalid course data returned" }, { status: 502 });
     }
 
     const courseName = [c.club_name, c.course_name].filter(Boolean).join(" — ") || "Imported Course";
+    // Deduplicate if club_name and course_name are the same
+    const dedupedName = c.club_name === c.course_name
+      ? c.club_name || "Imported Course"
+      : courseName;
     const city = c.location?.city || null;
     const state = c.location?.state || null;
 
-    const holeMap = buildHoleMap(c.tees || {});
+    const holeMap = buildHoleMap(c.tees);
 
     if (holeMap.size === 0) {
+      console.error("Golf course API: buildHoleMap returned empty. tees keys:", Object.keys(c.tees),
+        "male count:", c.tees.male?.length, "female count:", c.tees.female?.length);
       return NextResponse.json({ error: "No hole data found for this course" }, { status: 400 });
     }
 
@@ -141,10 +148,10 @@ export async function POST(req: NextRequest) {
       .sort(([a], [b]) => a - b)
       .map(([holeNumber, tees]) => ({
         holeNumber,
-        teeBoxes: Array.from(tees.entries()).map(([name, data]) => ({
+        teeBoxes: Array.from(tees.entries()).map(([name, d]) => ({
           name,
-          par: data.par,
-          yardage: data.yardage,
+          par: d.par,
+          yardage: d.yardage,
         })),
       }));
 
@@ -158,7 +165,7 @@ export async function POST(req: NextRequest) {
     // Create course with holes and tee boxes
     const course = await prisma.course.create({
       data: {
-        name: courseName,
+        name: dedupedName,
         city,
         state,
         holes: {

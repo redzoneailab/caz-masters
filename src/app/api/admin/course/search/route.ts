@@ -4,8 +4,9 @@ function checkAuth(req: NextRequest) {
   return req.headers.get("authorization") === `Bearer ${process.env.ADMIN_PASSWORD}`;
 }
 
+// Search response: { courses: [{ id, club_name, course_name, location: { city, state, country, ... }, tees: {...} }, ...] }
 interface SearchCourse {
-  id: string;
+  id: number | string;
   club_name: string;
   course_name: string;
   location: {
@@ -45,19 +46,16 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json();
 
-    // The API returns an object keyed by course ID, or an array — normalize both
+    // Response is { courses: [...] } where courses is an array
     let rawCourses: SearchCourse[] = [];
     if (Array.isArray(data.courses)) {
       rawCourses = data.courses;
     } else if (data.courses && typeof data.courses === "object") {
-      // courses is an object keyed by ID: { "abc123": { id, club_name, ... } }
       rawCourses = Object.values(data.courses);
-    } else if (Array.isArray(data)) {
-      rawCourses = data;
     }
 
     const courses = rawCourses.map((c) => ({
-      id: c.id,
+      id: String(c.id),
       clubName: c.club_name || "",
       courseName: c.course_name || "",
       city: c.location?.city || "",
