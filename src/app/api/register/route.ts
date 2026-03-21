@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This email is already registered." }, { status: 400 });
     }
 
+    // Link to existing UserAccount if the registrant already has one
+    const existingAccount = await prisma.userAccount.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
     // Create player
     const player = await prisma.player.create({
       data: {
@@ -77,6 +83,7 @@ export async function POST(req: NextRequest) {
         returningPlayer: false,
         dietaryNeeds: null,
         tournamentId: tournament.id,
+        ...(existingAccount && { userAccountId: existingAccount.id }),
       },
     });
 
