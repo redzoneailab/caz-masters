@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TOURNAMENT } from "@/lib/tournament";
-import { getTeeBoxName, isMensFlight } from "@/lib/tees";
+import { getTeeBoxName, isMensFlight, TeeAssignments } from "@/lib/tees";
 
 function stablefordPoints(strokes: number, par: number): number {
   const diff = strokes - par;
@@ -42,6 +42,7 @@ export async function GET() {
 
   const numHoles = tournament.numHoles;
   const shotgunStart = tournament.shotgunStart ?? true;
+  const teeAssignments = (tournament.teeAssignments as TeeAssignments | null) ?? null;
   const holes = tournament.course.holes.filter((h) => h.holeNumber <= numHoles);
 
   // Build tee box lookup: holeNumber -> teeName -> { par, yardage }
@@ -57,7 +58,7 @@ export async function GET() {
   function getParForPlayer(holeNumber: number, genderFlight: string): number {
     const holeTees = teeMap.get(holeNumber);
     const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
-    const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+    const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees, teeAssignments);
     return holeTees?.get(teeName)?.par || 4;
   }
 

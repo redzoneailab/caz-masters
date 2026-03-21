@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { getTeeBoxName, isMensFlight } from "@/lib/tees";
+import { getTeeBoxName, isMensFlight, TeeAssignments } from "@/lib/tees";
 
 export const metadata = {
   title: "Hall of Fame | The Caz Masters",
@@ -116,10 +116,12 @@ export default async function HistoryPage() {
       teeMap.set(hole.holeNumber, tees);
     }
 
+    const teeAssignments = (tournament.teeAssignments as TeeAssignments | null) ?? null;
+
     function getParForPlayer(holeNumber: number, genderFlight: string): number {
       const holeTees = teeMap.get(holeNumber);
       const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
-      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees, teeAssignments);
       return holeTees?.get(teeName) || 4;
     }
 

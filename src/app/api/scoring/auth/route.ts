@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
     holes,
     numHoles: tournament.numHoles,
     tournamentId: tournament.id,
+    teeAssignments: tournament.teeAssignments ?? null,
     existingScores: existingScores.map((s) => ({
       playerId: s.playerId,
       holeNumber: s.holeNumber,

@@ -17,6 +17,7 @@ export async function PATCH(req: NextRequest) {
 
   if (typeof body.registrationOpen === "boolean") data.registrationOpen = body.registrationOpen;
   if (typeof body.shotgunStart === "boolean") data.shotgunStart = body.shotgunStart;
+  if (body.teeAssignments !== undefined) data.teeAssignments = body.teeAssignments;
 
   const tournament = await prisma.tournament.update({
     where: { year: TOURNAMENT.year },

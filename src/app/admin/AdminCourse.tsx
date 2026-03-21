@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { TeeAssignments, FlightTeeConfig } from "@/lib/tees";
 
 interface TeeBoxEntry {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminCourse({ password }: { password: string }) {
   const [tournamentId, setTournamentId] = useState("");
   const [numHoles, setNumHoles] = useState(18);
   const [shotgunStart, setShotgunStart] = useState(true);
+  const [teeAssignments, setTeeAssignments] = useState<TeeAssignments>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingHole, setEditingHole] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export default function AdminCourse({ password }: { password: string }) {
         setTournamentId(data.tournamentId || "");
         setNumHoles(data.numHoles || 18);
         setShotgunStart(data.shotgunStart ?? true);
+        setTeeAssignments(data.teeAssignments || {});
       }
       if (pinsRes.ok) {
         const data = await pinsRes.json();
@@ -99,6 +102,80 @@ export default function AdminCourse({ password }: { password: string }) {
   }, [password, tournamentId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Collect all unique tee names across the course
+  const allTeeNames = course
+    ? [...new Set(course.holes.flatMap((h) => h.teeBoxes.map((t) => t.name)))].sort()
+    : [];
+
+  // Get tee names available for a specific hole
+  function holeTeeNames(holeNumber: number): string[] {
+    const hole = course?.holes.find((h) => h.holeNumber === holeNumber);
+    return hole ? hole.teeBoxes.map((t) => t.name) : [];
+  }
+
+  // Resolve which tee is active for a flight on a given hole
+  function resolvedTee(flight: string, holeNumber: number): string {
+    const config = teeAssignments[flight];
+    const override = config?.holes?.[String(holeNumber)];
+    if (override) return override;
+    return config?.default || "";
+  }
+
+  async function saveTeeAssignments(updated: TeeAssignments) {
+    setTeeAssignments(updated);
+    try {
+      await fetch("/api/admin/tournament", {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ teeAssignments: updated }),
+      });
+    } catch {
+      setError("Failed to save tee assignments");
+    }
+  }
+
+  function updateFlightDefault(flight: string, teeName: string) {
+    const current = teeAssignments[flight] || {};
+    const updated: TeeAssignments = {
+      ...teeAssignments,
+      [flight]: { ...current, default: teeName, holes: current.holes || {} },
+    };
+    saveTeeAssignments(updated);
+  }
+
+  function applyQuickAssign(flight: string, mode: "all" | "front-back", frontTee: string, backTee?: string) {
+    const holes: Record<string, string> = {};
+    if (mode === "front-back" && backTee) {
+      // Set default to front tee, override back 9 holes individually
+      for (let h = Math.ceil(numHoles / 2) + 1; h <= numHoles; h++) {
+        holes[String(h)] = backTee;
+      }
+    }
+    const updated: TeeAssignments = {
+      ...teeAssignments,
+      [flight]: { default: frontTee, holes },
+    };
+    saveTeeAssignments(updated);
+  }
+
+  function updateHoleOverride(flight: string, holeNumber: number, teeName: string) {
+    const current: FlightTeeConfig = teeAssignments[flight] || {};
+    const currentHoles = { ...(current.holes || {}) };
+
+    // If it matches the default, remove the override
+    if (teeName === (current.default || "")) {
+      delete currentHoles[String(holeNumber)];
+    } else {
+      currentHoles[String(holeNumber)] = teeName;
+    }
+
+    const updated: TeeAssignments = {
+      ...teeAssignments,
+      [flight]: { ...current, holes: currentHoles },
+    };
+    saveTeeAssignments(updated);
+  }
 
   async function seedCourse() {
     setError("");
@@ -258,6 +335,9 @@ export default function AdminCourse({ password }: { password: string }) {
 
   if (loading) return <p className="text-navy-500 py-8 text-center">Loading...</p>;
 
+  const flights = ["Men", "Women"];
+  const halfPoint = Math.ceil(numHoles / 2);
+
   return (
     <div className="space-y-8">
       {error && (
@@ -319,7 +399,6 @@ export default function AdminCourse({ password }: { password: string }) {
 
         {!course ? (
           <div className="space-y-4">
-            {/* Course Search */}
             <div className="bg-white rounded-xl border border-navy-100 p-5">
               <h3 className="text-sm font-bold text-navy-900 mb-3">Import from Golf Course API</h3>
               <form onSubmit={searchCourses} className="flex gap-2">
@@ -361,7 +440,6 @@ export default function AdminCourse({ password }: { password: string }) {
               )}
             </div>
 
-            {/* Or Seed Cazenovia */}
             <div className="bg-white rounded-xl border border-navy-100 p-5 text-center">
               <p className="text-navy-500 text-sm mb-3">Or set up manually:</p>
               <button
@@ -415,6 +493,119 @@ export default function AdminCourse({ password }: { password: string }) {
               )}
             </div>
 
+            {/* Tee Assignments — Quick Assign */}
+            {allTeeNames.length > 1 && (
+              <div className="bg-white rounded-xl border border-navy-100 p-5">
+                <h3 className="text-sm font-bold text-navy-900 mb-4">Tee Assignments by Flight</h3>
+                <div className="space-y-5">
+                  {flights.map((flight) => {
+                    const config = teeAssignments[flight] || {};
+                    const hasOverrides = Object.keys(config.holes || {}).length > 0;
+                    // Detect front/back split pattern
+                    const isSplit = hasOverrides && (() => {
+                      const overrideValues = Object.entries(config.holes || {});
+                      const backHoles = overrideValues.filter(([h]) => Number(h) > halfPoint);
+                      return backHoles.length > 0 && backHoles.length === overrideValues.length
+                        && backHoles.every(([, v]) => v === backHoles[0][1]);
+                    })();
+                    const backTee = isSplit
+                      ? Object.values(config.holes || {})[0]
+                      : "";
+
+                    return (
+                      <div key={flight}>
+                        <p className="text-xs font-semibold text-navy-600 uppercase tracking-wider mb-2">{flight}&apos;s Flight</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Quick assign: All holes */}
+                          <button
+                            onClick={() => {
+                              const tee = config.default || allTeeNames[0];
+                              applyQuickAssign(flight, "all", tee);
+                            }}
+                            className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                              config.default && !hasOverrides
+                                ? "border-gold-400 bg-gold-50 text-gold-700 font-semibold"
+                                : "border-navy-200 text-navy-500 hover:bg-navy-50"
+                            }`}
+                          >
+                            All holes
+                          </button>
+                          <button
+                            onClick={() => {
+                              const front = config.default || allTeeNames[0];
+                              const back = backTee || (allTeeNames.length > 1 ? allTeeNames[1] : allTeeNames[0]);
+                              applyQuickAssign(flight, "front-back", front, back);
+                            }}
+                            className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                              isSplit
+                                ? "border-gold-400 bg-gold-50 text-gold-700 font-semibold"
+                                : "border-navy-200 text-navy-500 hover:bg-navy-50"
+                            }`}
+                          >
+                            Front / Back split
+                          </button>
+                          <span className="text-navy-300">|</span>
+
+                          {(!hasOverrides || !isSplit) ? (
+                            /* All holes: single dropdown */
+                            <select
+                              value={config.default || ""}
+                              onChange={(e) => {
+                                if (hasOverrides) {
+                                  applyQuickAssign(flight, "all", e.target.value);
+                                } else {
+                                  updateFlightDefault(flight, e.target.value);
+                                }
+                              }}
+                              className="text-xs border border-navy-200 rounded-lg px-2 py-1"
+                            >
+                              <option value="">Select tee...</option>
+                              {allTeeNames.map((t) => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            /* Front/back split: two dropdowns */
+                            <>
+                              <span className="text-xs text-navy-500">1-{halfPoint}:</span>
+                              <select
+                                value={config.default || ""}
+                                onChange={(e) => applyQuickAssign(flight, "front-back", e.target.value, backTee)}
+                                className="text-xs border border-navy-200 rounded-lg px-2 py-1"
+                              >
+                                <option value="">Select...</option>
+                                {allTeeNames.map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
+                              <span className="text-xs text-navy-500">{halfPoint + 1}-{numHoles}:</span>
+                              <select
+                                value={backTee}
+                                onChange={(e) => applyQuickAssign(flight, "front-back", config.default || allTeeNames[0], e.target.value)}
+                                className="text-xs border border-navy-200 rounded-lg px-2 py-1"
+                              >
+                                <option value="">Select...</option>
+                                {allTeeNames.map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
+                            </>
+                          )}
+                        </div>
+                        {config.default && (
+                          <p className="text-xs text-navy-400 mt-1.5">
+                            {hasOverrides
+                              ? `Default: ${config.default}, ${Object.keys(config.holes || {}).length} hole override${Object.keys(config.holes || {}).length !== 1 ? "s" : ""}`
+                              : `All ${numHoles} holes: ${config.default}`}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Course table */}
             <div className="bg-white rounded-xl border border-navy-100 overflow-hidden">
               <div className="bg-navy-50 px-5 py-3 border-b border-navy-100">
@@ -433,74 +624,101 @@ export default function AdminCourse({ password }: { password: string }) {
                   })()}
                 </p>
               </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-navy-100 text-navy-600">
-                    <th className="text-left px-4 py-2">Hole</th>
-                    <th className="text-left px-4 py-2">Tee Boxes</th>
-                    <th className="text-center px-4 py-2">Active</th>
-                    <th className="text-right px-4 py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {course.holes.map((hole) => (
-                    <tr key={hole.id} className={`border-b border-navy-50 ${!hole.active ? "opacity-50" : ""}`}>
-                      <td className="px-4 py-2 font-bold text-navy-900">{hole.holeNumber}</td>
-                      <td className="px-4 py-2">
-                        {editingHole === hole.id ? (
-                          <div className="space-y-1.5">
-                            {hole.teeBoxes.map((tb) => (
-                              <div key={tb.id} className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-navy-600 w-14">{tb.name}</span>
-                                <span className="text-xs text-navy-500">Par</span>
-                                <input
-                                  type="number"
-                                  defaultValue={tb.par}
-                                  min={3}
-                                  max={5}
-                                  className="w-12 border rounded px-1 py-0.5 text-center text-sm"
-                                  onBlur={(e) => updateTeeBox(hole.id, { id: tb.id, par: parseInt(e.target.value) })}
-                                />
-                                <span className="text-xs text-navy-500">Yds</span>
-                                <input
-                                  type="number"
-                                  defaultValue={tb.yardage || ""}
-                                  className="w-16 border rounded px-1 py-0.5 text-center text-sm"
-                                  onBlur={(e) => updateTeeBox(hole.id, { id: tb.id, yardage: parseInt(e.target.value) || null })}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-x-4 gap-y-0.5">
-                            {hole.teeBoxes.map((tb) => (
-                              <span key={tb.id} className="text-xs text-navy-600">
-                                <span className="font-medium">{tb.name}:</span> Par {tb.par}{tb.yardage ? `, ${tb.yardage}y` : ""}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => updateHole(hole.id, { active: !hole.active })}
-                          className={`text-xs px-2 py-0.5 rounded ${hole.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-                        >
-                          {hole.active ? "Yes" : "No"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <button
-                          onClick={() => setEditingHole(editingHole === hole.id ? null : hole.id)}
-                          className="text-xs text-navy-500 hover:text-navy-700"
-                        >
-                          {editingHole === hole.id ? "Done" : "Edit"}
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-navy-100 text-navy-600">
+                      <th className="text-left px-4 py-2">Hole</th>
+                      <th className="text-left px-4 py-2">Tee Boxes</th>
+                      {allTeeNames.length > 1 && flights.map((f) => (
+                        <th key={f} className="text-center px-2 py-2 text-xs">{f}</th>
+                      ))}
+                      <th className="text-center px-4 py-2">Active</th>
+                      <th className="text-right px-4 py-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {course.holes.map((hole) => (
+                      <tr key={hole.id} className={`border-b border-navy-50 ${!hole.active ? "opacity-50" : ""}`}>
+                        <td className="px-4 py-2 font-bold text-navy-900">{hole.holeNumber}</td>
+                        <td className="px-4 py-2">
+                          {editingHole === hole.id ? (
+                            <div className="space-y-1.5">
+                              {hole.teeBoxes.map((tb) => (
+                                <div key={tb.id} className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-navy-600 w-14">{tb.name}</span>
+                                  <span className="text-xs text-navy-500">Par</span>
+                                  <input
+                                    type="number"
+                                    defaultValue={tb.par}
+                                    min={3}
+                                    max={5}
+                                    className="w-12 border rounded px-1 py-0.5 text-center text-sm"
+                                    onBlur={(e) => updateTeeBox(hole.id, { id: tb.id, par: parseInt(e.target.value) })}
+                                  />
+                                  <span className="text-xs text-navy-500">Yds</span>
+                                  <input
+                                    type="number"
+                                    defaultValue={tb.yardage || ""}
+                                    className="w-16 border rounded px-1 py-0.5 text-center text-sm"
+                                    onBlur={(e) => updateTeeBox(hole.id, { id: tb.id, yardage: parseInt(e.target.value) || null })}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                              {hole.teeBoxes.map((tb) => (
+                                <span key={tb.id} className="text-xs text-navy-600">
+                                  <span className="font-medium">{tb.name}:</span> Par {tb.par}{tb.yardage ? `, ${tb.yardage}y` : ""}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        {/* Per-hole tee assignment overrides */}
+                        {allTeeNames.length > 1 && flights.map((flight) => {
+                          const resolved = resolvedTee(flight, hole.holeNumber);
+                          const isOverride = teeAssignments[flight]?.holes?.[String(hole.holeNumber)];
+                          const available = holeTeeNames(hole.holeNumber);
+                          return (
+                            <td key={flight} className="px-2 py-2 text-center">
+                              <select
+                                value={resolved}
+                                onChange={(e) => updateHoleOverride(flight, hole.holeNumber, e.target.value)}
+                                className={`text-xs border rounded px-1 py-0.5 max-w-[80px] ${
+                                  isOverride ? "border-gold-400 bg-gold-50" : "border-navy-200"
+                                }`}
+                              >
+                                <option value="">—</option>
+                                {available.map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
+                            </td>
+                          );
+                        })}
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => updateHole(hole.id, { active: !hole.active })}
+                            className={`text-xs px-2 py-0.5 rounded ${hole.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                          >
+                            {hole.active ? "Yes" : "No"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={() => setEditingHole(editingHole === hole.id ? null : hole.id)}
+                            className="text-xs text-navy-500 hover:text-navy-700"
+                          >
+                            {editingHole === hole.id ? "Done" : "Edit"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

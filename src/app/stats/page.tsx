@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getTeeBoxName } from "@/lib/tees";
+import { getTeeBoxName, TeeAssignments } from "@/lib/tees";
 
 export const metadata = {
   title: "All-Time Stats | The Caz Masters",
@@ -116,10 +116,12 @@ export default async function StatsPage() {
       teeMap.set(hole.holeNumber, tees);
     }
 
+    const teeAssignments = (tournament.teeAssignments as TeeAssignments | null) ?? null;
+
     function getParForPlayer(holeNumber: number, genderFlight: string): number {
       const holeTees = teeMap.get(holeNumber);
       const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
-      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees, teeAssignments);
       return holeTees?.get(teeName) || 4;
     }
 

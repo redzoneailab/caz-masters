@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getTeeBoxName } from "@/lib/tees";
+import { getTeeBoxName, TeeAssignments } from "@/lib/tees";
 import { notFound } from "next/navigation";
 import PlayerProfile from "./PlayerProfile";
 
@@ -53,10 +53,12 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       teeMap.set(hole.holeNumber, tees);
     }
 
+    const teeAssignments = (player.tournament.teeAssignments as TeeAssignments | null) ?? null;
+
     function getParForHole(holeNumber: number, genderFlight: string): number {
       const holeTees = teeMap.get(holeNumber);
       const availableTees = holeTees ? Array.from(holeTees.keys()) : undefined;
-      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees);
+      const teeName = getTeeBoxName(holeNumber, genderFlight, availableTees, teeAssignments);
       return holeTees?.get(teeName) || 4;
     }
 
@@ -140,7 +142,7 @@ async function getPlayersByAccountId(id: string) {
         include: {
           tournament: {
             select: {
-              year: true, name: true, numHoles: true,
+              year: true, name: true, numHoles: true, teeAssignments: true,
               course: {
                 select: {
                   holes: {
@@ -181,7 +183,7 @@ async function getPlayersByPlayerId(id: string) {
     include: {
       tournament: {
         select: {
-          year: true, name: true, numHoles: true,
+          year: true, name: true, numHoles: true, teeAssignments: true,
           course: {
             select: {
               holes: {

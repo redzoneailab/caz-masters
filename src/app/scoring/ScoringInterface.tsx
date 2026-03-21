@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getTeeBoxName } from "@/lib/tees";
+import { getTeeBoxName, TeeAssignments } from "@/lib/tees";
 
 interface PlayerInfo {
   id: string;
@@ -47,6 +47,7 @@ export default function ScoringInterface() {
   const [holes, setHoles] = useState<Hole[]>([]);
   const [tournamentId, setTournamentId] = useState("");
   const [startingHole, setStartingHole] = useState(1);
+  const [teeAssignments, setTeeAssignments] = useState<TeeAssignments | null>(null);
   const [currentHole, setCurrentHole] = useState(0); // index
   const [scores, setScores] = useState<Map<string, ScoreEntry>>(new Map());
   const [online, setOnline] = useState(true);
@@ -86,6 +87,7 @@ export default function ScoringInterface() {
           setHoles(data.holes || []);
           setTournamentId(data.tournamentId || "");
           setStartingHole(data.startingHole || 1);
+          setTeeAssignments(data.teeAssignments || null);
           setCurrentHole(data.currentHole || 0);
           const scoreMap = new Map<string, ScoreEntry>();
           for (const [key, val] of Object.entries(data.scores || {})) {
@@ -110,10 +112,11 @@ export default function ScoringInterface() {
       tournamentId,
       currentHole,
       startingHole,
+      teeAssignments,
       scores: Object.fromEntries(scores),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [authed, scorerId, scorerPin, teamName, players, holes, tournamentId, currentHole, startingHole, scores]);
+  }, [authed, scorerId, scorerPin, teamName, players, holes, tournamentId, currentHole, startingHole, teeAssignments, scores]);
 
   useEffect(() => { saveToLocal(); }, [saveToLocal]);
 
@@ -146,6 +149,7 @@ export default function ScoringInterface() {
       setTeamName(data.team.name);
       setPlayers(data.players);
       setStartingHole(teamStart);
+      setTeeAssignments(data.teeAssignments || null);
       setHoles(reorderHoles(data.holes, teamStart));
       setTournamentId(data.tournamentId);
 
@@ -172,13 +176,13 @@ export default function ScoringInterface() {
 
   function getParForPlayer(hole: Hole, genderFlight: string): number {
     const teeNames = (hole.teeBoxes || []).map((t) => t.name);
-    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames);
+    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames, teeAssignments);
     return (hole.teeBoxes || []).find((t) => t.name === teeName)?.par || 4;
   }
 
   function getYardageForPlayer(hole: Hole, genderFlight: string): number | null {
     const teeNames = (hole.teeBoxes || []).map((t) => t.name);
-    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames);
+    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames, teeAssignments);
     return (hole.teeBoxes || []).find((t) => t.name === teeName)?.yardage ?? null;
   }
 
