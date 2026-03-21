@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TOURNAMENT } from "@/lib/tournament";
+import type { TeeAssignments } from "@/lib/tees";
 
 function checkAuth(req: NextRequest) {
   return req.headers.get("authorization") === `Bearer ${process.env.ADMIN_PASSWORD}`;
@@ -10,14 +11,11 @@ function checkAuth(req: NextRequest) {
 //
 // GET /v1/courses/{id} → { course: { id, club_name, course_name, location, tees } }
 //
-// tees: {
-//   male: [{ tee_name: "White", holes: [{ par: 4, yardage: 357, handicap: 13 }, ...] }, ...],
-//   female: [{ tee_name: "Red", holes: [{ par: 5, yardage: 440, handicap: 10 }, ...] }, ...]
-// }
-//
 // Holes are positional arrays — NO hole_number field. Index 0 = hole 1.
-// Same tee_name can appear in both male and female with DIFFERENT par values
-// (e.g., "White" male par 4 vs "White" female par 5 on same hole).
+//
+// Tee names can be compound "Front/Back" for 9-hole courses played as 18:
+//   "White/Red"    → White tees for holes 1-9, Red tees for holes 10-18
+//   "Yellow/Yellow" → Yellow tees for all 18 holes
 
 interface ApiHole {
   par: number;
@@ -35,35 +33,64 @@ interface ApiTeeSet {
 }
 
 /**
+ * Split a compound tee name like "White/Red" into front/back names.
+ * Returns null if not a compound name.
+ */
+function splitTeeName(name: string): { front: string; back: string } | null {
+  if (!name.includes("/")) return null;
+  const [front, back] = name.split("/", 2);
+  if (!front || !back) return null;
+  return { front: front.trim(), back: back.trim() };
+}
+
+/**
  * Flatten the gender-split tee structure into:
  *   holeNumber -> teeBoxName -> { par, yardage }
  *
- * Hole number is derived from array index (0-based → 1-based).
- * If the same tee_name appears in both male and female with different
- * par/yardage on any hole, the female version gets a " (W)" suffix.
+ * Handles compound tee names (e.g., "White/Red") by splitting them:
+ * the first name applies to holes 1 through halfPoint, the second
+ * name to holes halfPoint+1 through totalHoles.
  */
 function buildHoleMap(
   tees: { male?: ApiTeeSet[]; female?: ApiTeeSet[] }
 ): Map<number, Map<string, { par: number; yardage: number | null }>> {
   const holeMap = new Map<number, Map<string, { par: number; yardage: number | null }>>();
 
-  function processTeeSet(teeSet: ApiTeeSet, nameOverride?: string) {
-    const teeName = nameOverride || teeSet.tee_name || teeSet.colour || "Default";
-    for (let i = 0; i < teeSet.holes.length; i++) {
-      const h = teeSet.holes[i];
-      const holeNumber = i + 1;
-      let holeTees = holeMap.get(holeNumber);
-      if (!holeTees) {
-        holeTees = new Map();
-        holeMap.set(holeNumber, holeTees);
-      }
-      if (!holeTees.has(teeName)) {
-        holeTees.set(teeName, { par: h.par, yardage: h.yardage ?? null });
-      }
+  function addHoleEntry(holeNumber: number, teeName: string, par: number, yardage: number | null) {
+    let holeTees = holeMap.get(holeNumber);
+    if (!holeTees) {
+      holeTees = new Map();
+      holeMap.set(holeNumber, holeTees);
+    }
+    // First writer wins
+    if (!holeTees.has(teeName)) {
+      holeTees.set(teeName, { par, yardage });
     }
   }
 
-  // Collect male tee names for collision detection
+  function processTeeSet(teeSet: ApiTeeSet, nameOverride?: string) {
+    const rawName = nameOverride || teeSet.tee_name || teeSet.colour || "Default";
+    const split = splitTeeName(rawName);
+    const totalHoles = teeSet.holes.length;
+    const halfPoint = Math.ceil(totalHoles / 2);
+
+    for (let i = 0; i < totalHoles; i++) {
+      const h = teeSet.holes[i];
+      const holeNumber = i + 1;
+
+      let teeName: string;
+      if (split) {
+        // Compound name: front half gets first name, back half gets second
+        teeName = holeNumber <= halfPoint ? split.front : split.back;
+      } else {
+        teeName = rawName;
+      }
+
+      addHoleEntry(holeNumber, teeName, h.par, h.yardage ?? null);
+    }
+  }
+
+  // Collect male tee names (raw) for collision detection
   const maleNames = new Set((tees.male || []).map((t) => t.tee_name || t.colour || "Default"));
 
   // Process male tees first
@@ -74,13 +101,29 @@ function buildHoleMap(
     const femaleName = ts.tee_name || ts.colour || "Default";
     if (maleNames.has(femaleName)) {
       // Check if any hole differs between this female tee and the already-inserted male version
+      // We need to compare using the RESOLVED name (after splitting)
+      const split = splitTeeName(femaleName);
+      const totalHoles = ts.holes.length;
+      const halfPoint = Math.ceil(totalHoles / 2);
+
       const differs = ts.holes.some((fh, i) => {
         const holeNumber = i + 1;
-        const existing = holeMap.get(holeNumber)?.get(femaleName);
+        const resolvedName = split
+          ? (holeNumber <= halfPoint ? split.front : split.back)
+          : femaleName;
+        const existing = holeMap.get(holeNumber)?.get(resolvedName);
         return existing && (existing.par !== fh.par || existing.yardage !== (fh.yardage ?? null));
       });
       if (differs) {
-        processTeeSet(ts, `${femaleName} (W)`);
+        // Add (W) suffix to the split names
+        if (split) {
+          const wFront = split.front === split.back ? `${split.front} (W)` : `${split.front} (W)`;
+          const wBack = split.front === split.back ? `${split.back} (W)` : `${split.back} (W)`;
+          const wName = `${wFront}/${wBack}`;
+          processTeeSet(ts, wName);
+        } else {
+          processTeeSet(ts, `${femaleName} (W)`);
+        }
       }
       // If identical, skip — the male version already covers it
     } else {
@@ -89,6 +132,69 @@ function buildHoleMap(
   }
 
   return holeMap;
+}
+
+/**
+ * After importing a course with split tee names, auto-configure tee assignments.
+ * Detects front/back tee patterns and sets up Men/Women flight defaults.
+ */
+function buildAutoTeeAssignments(
+  allTeeNames: string[],
+  numHoles: number,
+  holeMap: Map<number, Map<string, { par: number; yardage: number | null }>>
+): TeeAssignments | null {
+  if (allTeeNames.length <= 1) return null;
+
+  // Find tees that only appear on front 9 or back 9 (from split compound names)
+  const halfPoint = Math.ceil(numHoles / 2);
+  const frontOnlyTees = new Set<string>();
+  const backOnlyTees = new Set<string>();
+
+  for (const teeName of allTeeNames) {
+    let onFront = false;
+    let onBack = false;
+    for (const [holeNum, holeTees] of holeMap) {
+      if (holeTees.has(teeName)) {
+        if (holeNum <= halfPoint) onFront = true;
+        else onBack = true;
+      }
+    }
+    if (onFront && !onBack) frontOnlyTees.add(teeName);
+    if (onBack && !onFront) backOnlyTees.add(teeName);
+  }
+
+  // If we have front/back split tees, auto-assign them for Men
+  // and find a tee that spans all holes for Women
+  const assignments: TeeAssignments = {};
+
+  if (frontOnlyTees.size > 0 && backOnlyTees.size > 0) {
+    // Men: use first front-only tee as default, override back 9 with first back-only tee
+    const menFront = Array.from(frontOnlyTees)[0];
+    const menBack = Array.from(backOnlyTees)[0];
+    const holeOverrides: Record<string, string> = {};
+    for (let h = halfPoint + 1; h <= numHoles; h++) {
+      holeOverrides[String(h)] = menBack;
+    }
+    assignments["Men"] = { default: menFront, holes: holeOverrides };
+  }
+
+  // Women: find a tee that exists on all holes (from "Yellow/Yellow" → "Yellow" on all)
+  const allHoleTees = allTeeNames.filter((name) => {
+    for (let h = 1; h <= numHoles; h++) {
+      if (!holeMap.get(h)?.has(name)) return false;
+    }
+    return true;
+  });
+
+  // Prefer a tee not used by Men
+  const menDefault = assignments["Men"]?.default;
+  const menBack = Object.values(assignments["Men"]?.holes || {})[0];
+  const womenTee = allHoleTees.find((t) => t !== menDefault && t !== menBack) || allHoleTees[0];
+  if (womenTee) {
+    assignments["Women"] = { default: womenTee, holes: {} };
+  }
+
+  return Object.keys(assignments).length > 0 ? assignments : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -128,7 +234,6 @@ export async function POST(req: NextRequest) {
     }
 
     const courseName = [c.club_name, c.course_name].filter(Boolean).join(" — ") || "Imported Course";
-    // Deduplicate if club_name and course_name are the same
     const dedupedName = c.club_name === c.course_name
       ? c.club_name || "Imported Course"
       : courseName;
@@ -154,6 +259,9 @@ export async function POST(req: NextRequest) {
           yardage: d.yardage,
         })),
       }));
+
+    // Collect all unique tee names for auto-assignment
+    const allTeeNames = [...new Set(holes.flatMap((h) => h.teeBoxes.map((t) => t.name)))].sort();
 
     // Delete existing course if tournament has one
     const tournament = await prisma.tournament.findUnique({ where: { year: TOURNAMENT.year } });
@@ -189,15 +297,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Link to tournament and set numHoles
+    // Auto-configure tee assignments based on split pattern
+    const autoAssignments = buildAutoTeeAssignments(allTeeNames, holes.length, holeMap);
+
+    // Link to tournament and set numHoles + auto tee assignments
     if (tournament) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateData: any = { courseId: course.id, numHoles: holes.length };
+      if (autoAssignments) updateData.teeAssignments = autoAssignments;
       await prisma.tournament.update({
         where: { id: tournament.id },
-        data: { courseId: course.id, numHoles: holes.length },
+        data: updateData,
       });
     }
 
-    return NextResponse.json({ course }, { status: 201 });
+    return NextResponse.json({ course, teeAssignments: autoAssignments }, { status: 201 });
   } catch (error) {
     console.error("Course import error:", error);
     return NextResponse.json({ error: "Failed to import course" }, { status: 500 });
