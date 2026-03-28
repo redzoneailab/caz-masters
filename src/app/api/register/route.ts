@@ -71,6 +71,11 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
+    // Check if this email has registered in a previous tournament
+    const previousReg = await prisma.player.findFirst({
+      where: { email, tournamentId: { not: tournament.id } },
+    });
+
     // Create player
     const player = await prisma.player.create({
       data: {
@@ -80,7 +85,7 @@ export async function POST(req: NextRequest) {
         shirtSize,
         genderFlight,
         teamPreference: null,
-        returningPlayer: false,
+        returningPlayer: !!previousReg,
         dietaryNeeds: null,
         tournamentId: tournament.id,
         ...(existingAccount && { userAccountId: existingAccount.id }),

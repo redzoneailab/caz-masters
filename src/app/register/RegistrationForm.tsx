@@ -11,16 +11,14 @@ interface FormData {
   genderFlight: string;
 }
 
-const initialForm: FormData = {
-  fullName: "",
-  email: "",
-  phone: "",
-  shirtSize: "",
-  genderFlight: "",
-};
+interface Props {
+  prefill?: FormData | null;
+}
 
-export default function RegistrationForm() {
-  const [form, setForm] = useState<FormData>(initialForm);
+export default function RegistrationForm({ prefill }: Props) {
+  const [form, setForm] = useState<FormData>(
+    prefill ?? { fullName: "", email: "", phone: "", shirtSize: "", genderFlight: "" }
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

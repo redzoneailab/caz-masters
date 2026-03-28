@@ -1,5 +1,8 @@
 import Image from "next/image";
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import RegistrationForm from "./RegistrationForm";
 import { getTournamentSettings } from "@/lib/tournament-settings";
 
@@ -12,6 +15,25 @@ export const dynamic = "force-dynamic";
 
 export default async function RegisterPage() {
   const { freeRegistration, entryFee } = await getTournamentSettings();
+
+  // Look up previous registration for signed-in users
+  let prefill: { fullName: string; email: string; phone: string; shirtSize: string; genderFlight: string } | null = null;
+  const session = await getServerSession(authOptions);
+  if (session?.userAccountId) {
+    const prev = await prisma.player.findFirst({
+      where: { userAccountId: session.userAccountId },
+      orderBy: { createdAt: "desc" },
+      select: { fullName: true, email: true, phone: true, shirtSize: true, genderFlight: true },
+    });
+    if (prev) prefill = prev;
+  } else if (session?.user?.email) {
+    const prev = await prisma.player.findFirst({
+      where: { email: session.user.email },
+      orderBy: { createdAt: "desc" },
+      select: { fullName: true, email: true, phone: true, shirtSize: true, genderFlight: true },
+    });
+    if (prev) prefill = prev;
+  }
 
   return (
     <>
@@ -38,7 +60,7 @@ export default async function RegisterPage() {
 
       <section className="py-12 sm:py-16 bg-white">
         <div className="max-w-xl mx-auto px-4 sm:px-6">
-          <RegistrationForm />
+          <RegistrationForm prefill={prefill} />
         </div>
       </section>
     </>
