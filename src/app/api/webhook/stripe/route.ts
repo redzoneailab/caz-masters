@@ -75,6 +75,15 @@ export async function POST(req: NextRequest) {
         data: { paymentStatus: "paid_online" },
       });
     }
+
+    // Handle beer tab payment
+    const beerTabPlayerId = session.metadata?.beerTabPlayerId;
+    if (beerTabPlayerId) {
+      await prisma.beerTab.update({
+        where: { playerId: beerTabPlayerId },
+        data: { status: "paid_online" },
+      });
+    }
   }
 
   return NextResponse.json({ received: true });

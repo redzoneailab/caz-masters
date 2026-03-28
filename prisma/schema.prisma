@@ -50,6 +50,7 @@ model Player {
   userAccountId   String?
   userAccount     UserAccount? @relation(fields: [userAccountId], references: [id])
   scores          Score[]
+  beerTab         BeerTab?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -204,6 +205,19 @@ model Score {
   updatedAt    DateTime   @updatedAt
 
   @@unique([playerId, tournamentId, holeNumber])
+}
+
+model BeerTab {
+  id              String   @id @default(cuid())
+  playerId        String   @unique
+  player          Player   @relation(fields: [playerId], references: [id])
+  tournamentId    String
+  totalBeers      Int      @default(0)
+  totalAmount     Int      @default(0) // cents
+  status          String   @default("unpaid") // unpaid, paid_online, paid_manual
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Product {

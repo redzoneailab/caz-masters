@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     where: { year: TOURNAMENT.year },
   });
   if (!tournament) {
-    return NextResponse.json({ scores: [], beerTab: [] });
+    return NextResponse.json({ scores: [] });
   }
 
   const scores = await prisma.score.findMany({
@@ -28,29 +28,5 @@ export async function GET(req: NextRequest) {
     orderBy: [{ player: { fullName: "asc" } }, { holeNumber: "asc" }],
   });
 
-  // Beer tab
-  const beerScores = scores.filter((s) => s.shotgunBeer);
-  const beerByPlayer = new Map<string, { name: string; team: string; count: number }>();
-  for (const s of beerScores) {
-    const existing = beerByPlayer.get(s.playerId);
-    if (existing) {
-      existing.count++;
-    } else {
-      beerByPlayer.set(s.playerId, {
-        name: s.player.fullName,
-        team: s.player.team?.name || "",
-        count: 1,
-      });
-    }
-  }
-
-  const beerTab = Array.from(beerByPlayer.entries())
-    .map(([playerId, data]) => ({
-      playerId,
-      ...data,
-      totalOwed: data.count * TOURNAMENT.shotgunBeerPrice,
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  return NextResponse.json({ scores, beerTab, tournamentId: tournament.id });
+  return NextResponse.json({ scores, tournamentId: tournament.id });
 }

@@ -112,7 +112,7 @@ export default function ScoringInterface() {
 
   // Fetch teams list for auth form
   useEffect(() => {
-    if (authed) return; // don't need teams list when already authed
+    if (authed) return;
     setTeamsLoading(true);
     fetch("/api/scoring/teams")
       .then((r) => r.json())
@@ -174,7 +174,6 @@ export default function ScoringInterface() {
       setHoles(reorderHoles(data.holes, teamStart));
       setTournamentId(data.tournamentId);
 
-      // Load existing scores from server
       const scoreMap = new Map<string, ScoreEntry>();
       for (const s of data.existingScores) {
         scoreMap.set(`${s.playerId}-${s.holeNumber}`, {
@@ -201,12 +200,6 @@ export default function ScoringInterface() {
     return (hole.teeBoxes || []).find((t) => t.name === teeName)?.par || 4;
   }
 
-  function getYardageForPlayer(hole: Hole, genderFlight: string): number | null {
-    const teeNames = (hole.teeBoxes || []).map((t) => t.name);
-    const teeName = getTeeBoxName(hole.holeNumber, genderFlight, teeNames, teeAssignments);
-    return (hole.teeBoxes || []).find((t) => t.name === teeName)?.yardage ?? null;
-  }
-
   function getScore(playerId: string, holeNumber: number): ScoreEntry {
     const key = `${playerId}-${holeNumber}`;
     const player = players.find((p) => p.id === playerId);
@@ -230,9 +223,52 @@ export default function ScoringInterface() {
     newScores.set(key, updated);
     setScores(newScores);
 
-    // Debounce server sync
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => saveHoleToServer(holeNumber, newScores), 1000);
+  }
+
+  // Materialize default par scores for all players on the current hole
+  // so untouched scores get saved to the DB
+  function commitHoleScores(holeNumber: number) {
+    const newScores = new Map(scores);
+    let changed = false;
+    for (const p of players) {
+      const key = `${p.id}-${holeNumber}`;
+      if (!newScores.has(key)) {
+        const hole = holes.find((h) => h.holeNumber === holeNumber);
+        const par = hole ? getParForPlayer(hole, p.genderFlight) : 4;
+        newScores.set(key, {
+          playerId: p.id,
+          holeNumber,
+          strokes: par,
+          shotgunBeer: false,
+          rehit: false,
+          synced: false,
+        });
+        changed = true;
+      }
+    }
+    if (changed) {
+      setScores(newScores);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => saveHoleToServer(holeNumber, newScores), 500);
+    }
+  }
+
+  function navigateToHole(index: number) {
+    if (holes[currentHole]) {
+      commitHoleScores(holes[currentHole].holeNumber);
+    }
+    setCurrentHole(index);
+  }
+
+  function toggleShotgunMulligan(playerId: string, holeNumber: number) {
+    const current = getScore(playerId, holeNumber);
+    const isActive = current.shotgunBeer && current.rehit;
+    updateScore(playerId, holeNumber, {
+      shotgunBeer: !isActive,
+      rehit: !isActive,
+    });
   }
 
   async function saveHoleToServer(holeNumber: number, scoreMap: Map<string, ScoreEntry>) {
@@ -300,24 +336,24 @@ export default function ScoringInterface() {
       <section className="min-h-screen bg-navy-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-black text-white text-center mb-2">Score Entry</h1>
-          <p className="text-navy-400 text-center text-sm mb-8">Select your team and enter the scorer PIN</p>
+          <p className="text-white/60 text-center text-sm mb-8">Select your team and enter the scorer PIN</p>
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-navy-400 mb-1.5">Your Name</label>
+              <label className="block text-xs font-medium text-white/70 mb-1.5">Your Name</label>
               <input
                 type="text"
                 value={scorerName}
                 onChange={(e) => setScorerName(e.target.value)}
                 placeholder="Your full name"
-                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg placeholder:text-navy-500 focus:border-gold-400 focus:outline-none"
+                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg placeholder:text-white/30 focus:border-gold-400 focus:outline-none"
                 required
                 autoComplete="name"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-400 mb-1.5">Team</label>
+              <label className="block text-xs font-medium text-white/70 mb-1.5">Team</label>
               {teamsLoading ? (
-                <div className="w-full rounded-xl bg-navy-900 border border-navy-700 text-navy-500 px-4 py-3.5 text-lg">
+                <div className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white/40 px-4 py-3.5 text-lg">
                   Loading teams...
                 </div>
               ) : (
@@ -337,14 +373,14 @@ export default function ScoringInterface() {
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-400 mb-1.5">Scorer PIN</label>
+              <label className="block text-xs font-medium text-white/70 mb-1.5">Scorer PIN</label>
               <input
                 type="tel"
                 inputMode="numeric"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="Enter PIN"
-                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg tracking-[0.3em] text-center placeholder:text-navy-500 placeholder:tracking-normal focus:border-gold-400 focus:outline-none"
+                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg tracking-[0.3em] text-center placeholder:text-white/30 placeholder:tracking-normal focus:border-gold-400 focus:outline-none"
                 required
                 autoComplete="off"
               />
@@ -383,12 +419,12 @@ export default function ScoringInterface() {
             <p className="text-gold-400 font-bold text-sm">{teamName}</p>
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${online ? "bg-green-400" : "bg-red-400"}`} />
-              <span className="text-navy-400 text-xs">
+              <span className="text-white/60 text-xs">
                 {syncing ? "Saving..." : pendingCount > 0 ? `${pendingCount} pending` : lastSaved ? `Saved ${lastSaved}` : "Ready"}
               </span>
             </div>
           </div>
-          <button onClick={logout} className="text-navy-500 hover:text-white text-xs">
+          <button onClick={logout} className="text-white/40 hover:text-white text-xs">
             Sign Out
           </button>
         </div>
@@ -402,13 +438,13 @@ export default function ScoringInterface() {
             return (
               <button
                 key={h.holeNumber}
-                onClick={() => setCurrentHole(i)}
+                onClick={() => navigateToHole(i)}
                 className={`shrink-0 w-10 h-10 rounded-lg font-bold text-sm transition-colors ${
                   i === currentHole
                     ? "bg-gold-400 text-navy-950"
                     : allScored
                     ? "bg-navy-700 text-white"
-                    : "bg-navy-800 text-navy-400"
+                    : "bg-navy-800 text-white/50"
                 }`}
               >
                 {h.holeNumber}
@@ -423,9 +459,9 @@ export default function ScoringInterface() {
           <div className="flex items-center justify-center gap-3 mt-2">
             {(hole.teeBoxes || []).map((t) => (
               <div key={t.name} className="text-center">
-                <span className="text-navy-500 text-xs block">{t.name}</span>
+                <span className="text-white/50 text-xs block">{t.name}</span>
                 <span className="text-gold-400 font-bold">Par {t.par}</span>
-                {t.yardage && <span className="text-navy-400 text-sm ml-1">{t.yardage}y</span>}
+                {t.yardage && <span className="text-white/50 text-sm ml-1">{t.yardage}y</span>}
               </div>
             ))}
           </div>
@@ -437,15 +473,16 @@ export default function ScoringInterface() {
             const score = getScore(player.id, hole.holeNumber);
             const playerPar = getParForPlayer(hole, player.genderFlight);
             const diff = score.strokes - playerPar;
-            const diffColor = diff < 0 ? "text-red-400" : diff === 0 ? "text-white" : diff === 1 ? "text-navy-300" : "text-navy-500";
+            const diffColor = diff < 0 ? "text-red-400" : diff === 0 ? "text-white" : diff === 1 ? "text-white/60" : "text-white/40";
             const diffLabel = diff < 0 ? diff.toString() : diff === 0 ? "E" : `+${diff}`;
+            const isMulligan = score.shotgunBeer && score.rehit;
 
             return (
               <div key={player.id} className="bg-navy-900 rounded-xl p-4 border border-navy-800">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-white font-semibold">{player.fullName}</p>
-                    <p className="text-navy-500 text-xs">{player.genderFlight} &middot; Par {playerPar}</p>
+                    <p className="text-white/50 text-xs">{player.genderFlight} &middot; Par {playerPar}</p>
                   </div>
                   <span className={`font-bold text-sm ${diffColor}`}>{diffLabel}</span>
                 </div>
@@ -469,27 +506,18 @@ export default function ScoringInterface() {
                   </button>
                 </div>
 
-                {/* Toggles */}
-                <div className="flex gap-3 justify-center">
+                {/* Shotgun Mulligan toggle */}
+                <div className="flex justify-center">
                   <button
-                    onClick={() => updateScore(player.id, hole.holeNumber, { shotgunBeer: !score.shotgunBeer })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      score.shotgunBeer
+                    onClick={() => toggleShotgunMulligan(player.id, hole.holeNumber)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                      isMulligan
                         ? "bg-gold-400/20 text-gold-400 border border-gold-400/50"
-                        : "bg-navy-800 text-navy-500 border border-navy-700"
+                        : "bg-navy-800 text-white/50 border border-navy-700"
                     }`}
                   >
-                    <span>Shotgun $5</span>
-                  </button>
-                  <button
-                    onClick={() => updateScore(player.id, hole.holeNumber, { rehit: !score.rehit })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      score.rehit
-                        ? "bg-red-400/20 text-red-400 border border-red-400/50"
-                        : "bg-navy-800 text-navy-500 border border-navy-700"
-                    }`}
-                  >
-                    <span>Rehit</span>
+                    <span>Shotgun Mulligan</span>
+                    <span className="text-xs font-normal">$5</span>
                   </button>
                 </div>
               </div>
@@ -502,17 +530,17 @@ export default function ScoringInterface() {
       <div className="fixed bottom-0 left-0 right-0 bg-navy-900/95 backdrop-blur-sm border-t border-navy-800 px-4 py-3 z-40">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <button
-            onClick={() => setCurrentHole(Math.max(0, currentHole - 1))}
+            onClick={() => navigateToHole(Math.max(0, currentHole - 1))}
             disabled={currentHole === 0}
             className="bg-navy-800 hover:bg-navy-700 text-white font-bold px-6 py-3 rounded-xl transition-colors disabled:opacity-30 disabled:hover:bg-navy-800"
           >
             Prev
           </button>
-          <span className="text-navy-400 text-sm font-medium">
+          <span className="text-white/60 text-sm font-medium">
             {currentHole + 1} of {holes.length}
           </span>
           <button
-            onClick={() => setCurrentHole(Math.min(holes.length - 1, currentHole + 1))}
+            onClick={() => navigateToHole(Math.min(holes.length - 1, currentHole + 1))}
             disabled={currentHole === holes.length - 1}
             className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-6 py-3 rounded-xl transition-colors disabled:opacity-30"
           >

@@ -86,3 +86,51 @@ export async function sendConfirmationEmail(
     `,
   });
 }
+
+export async function sendBeerTabEmail(
+  to: string,
+  playerName: string,
+  beerCount: number,
+  totalDollars: number,
+  paymentUrl: string
+) {
+  await getResend().emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: `Your Shotgun Mulligan Tab — $${totalDollars}`,
+    html: `
+      <div style="background-color: #0a1628; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #111d33; border-radius: 16px; overflow: hidden;">
+          <div style="padding: 32px 24px; text-align: center; border-bottom: 2px solid #d4a030;">
+            <h1 style="color: white; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin: 0;">
+              The Caz Masters
+            </h1>
+          </div>
+          <div style="padding: 40px 24px; text-align: center;">
+            <h2 style="color: white; font-size: 22px; font-weight: 700; margin: 0 0 8px;">
+              Great round, ${playerName}!
+            </h2>
+            <p style="color: #94a3b8; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+              You crushed <strong style="color: #d4a030;">${beerCount} Shotgun Mulligan${beerCount !== 1 ? "s" : ""}</strong> out there.
+              Your tab is <strong style="color: #d4a030;">$${totalDollars}</strong>.
+            </p>
+            <p style="color: #94a3b8; font-size: 14px; margin: 0 0 28px;">
+              All proceeds go to Caz Cares. Thanks for supporting the cause.
+            </p>
+            <a href="${paymentUrl}" style="display: inline-block; background: #d4a030; color: #0a1628; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; padding: 14px 36px; border-radius: 12px; text-decoration: none;">
+              Pay $${totalDollars} Online
+            </a>
+            <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 28px 0 0;">
+              You can also settle up with cash at the next event.
+            </p>
+          </div>
+          <div style="padding: 16px 24px; border-top: 1px solid #1e293b; text-align: center;">
+            <p style="color: #475569; font-size: 12px; margin: 0;">
+              The Caz Masters &middot; Cazenovia Golf Club
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
