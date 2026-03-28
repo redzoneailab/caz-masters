@@ -12,7 +12,7 @@ export const TOURNAMENT = {
   numHoles: 18,
   afterPartyPrice: 25, // dollars per person
   afterPartyPriceCents: 2500,
-  afterPartyVenue: "The Brae Loch Inn",
+  afterPartyVenue: "Meier's Creek",
   afterPartyTime: "Around 3:00 PM",
   afterPartyDate: "July 3rd, 2026",
   afterPartyIncludes: [

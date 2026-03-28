@@ -41,17 +41,17 @@ export default function AboutPage() {
               <div className="space-y-4 text-navy-600 text-lg leading-relaxed">
                 <p>
                   A group of friends. A holiday weekend. A shared belief that golf is better
-                  with cold beers and a reason to play. The Caz Masters started in 2012 as
+                  with cold beers and something on the line. The Caz Masters started in 2011 as
                   a casual round and quickly became the thing everyone looks forward to all year.
                 </p>
                 <p>
-                  What began as a dozen buddies at Cazenovia Golf Club has grown into a full
-                  72-player field &mdash; with teams, prizes, traditions, and a signature rule
-                  that separates us from every other tournament on the planet.
+                  What began as a dozen buddies at whatever course would have us, has grown
+                  into a full 72-player field, with teams, prizes, traditions, and a signature
+                  rule that set the foundation for the legacy that is The Caz Masters.
                 </p>
                 <p>
-                  We&apos;ve raised thousands for local charities along the way. Not bad for a
-                  bunch of guys who started this as an excuse to day-drink on a golf course.
+                  We&apos;ve raised tens of thousands for local charities along the way. Not bad
+                  for a few fun afternoons on the links.
                 </p>
               </div>
             </div>

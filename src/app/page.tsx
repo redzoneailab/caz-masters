@@ -48,7 +48,7 @@ export default async function Home() {
             href="/register"
             className="inline-block bg-gold-400 hover:bg-gold-300 text-navy-950 font-black text-lg sm:text-xl px-10 py-5 rounded-xl transition-all hover:scale-105 shadow-2xl uppercase tracking-wide"
           >
-            {freeRegistration ? "Register" : `Let\u2019s Go \u2014 $${entryFee}`}
+            Let&apos;s Go
           </Link>
         </div>
       </section>
