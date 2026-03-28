@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { downloadCSV } from "@/lib/csv";
 
 interface TeamMember {
   id: string;
@@ -169,6 +170,24 @@ export default function AdminTeams({ password }: { password: string }) {
         <div className="flex gap-2">
           <button onClick={fetchTeams} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">
             Refresh
+          </button>
+          <button
+            onClick={() => {
+              const maxMembers = Math.max(...teams.map((t) => t.members.length), 4);
+              const headers = ["Team Name", "Starting Hole"];
+              for (let i = 1; i <= maxMembers; i++) headers.push(`Player ${i}`);
+              const rows = teams.map((t) => {
+                const row = [t.name, t.startingHole ? String(t.startingHole) : ""];
+                for (let i = 0; i < maxMembers; i++) {
+                  row.push(t.members[i]?.fullName || "");
+                }
+                return row;
+              });
+              downloadCSV(`caz-masters-team-sheet-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+            }}
+            className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50"
+          >
+            Download Team Sheet
           </button>
           <button
             onClick={toggleTeamsLocked}

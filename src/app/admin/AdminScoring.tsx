@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { downloadCSV } from "@/lib/csv";
 
 interface ScoreEntry {
   id: string;
@@ -139,6 +140,79 @@ export default function AdminScoring({ password }: { password: string }) {
     }
   }
 
+  async function downloadResults() {
+    try {
+      const res = await fetch("/api/leaderboard");
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Individual results
+      const allIndividuals = [...(data.mens || []), ...(data.womens || [])];
+      const indHeaders = ["Standing", "Player Name", "Flight", "Team", "Total Strokes", "To Par", "Stableford Points", "Holes Completed"];
+      const flights = [
+        { label: "Men", players: data.mens || [] },
+        { label: "Women", players: data.womens || [] },
+      ];
+      const indRows: string[][] = [];
+      for (const flight of flights) {
+        flight.players.forEach((p: { name: string; flight: string; teamName: string; totalStrokes: number; toPar: number; holesCompleted: number; scoresByHole: Record<string, { strokes: number; par: number }> }, i: number) => {
+          const stableford = Object.values(p.scoresByHole).reduce((sum: number, s: { strokes: number; par: number }) => {
+            const diff = s.strokes - s.par;
+            if (diff <= -3) return sum + 5;
+            if (diff === -2) return sum + 4;
+            if (diff === -1) return sum + 3;
+            if (diff === 0) return sum + 2;
+            if (diff === 1) return sum + 1;
+            return sum;
+          }, 0);
+          indRows.push([
+            String(i + 1),
+            p.name,
+            p.flight,
+            p.teamName,
+            String(p.totalStrokes),
+            p.toPar > 0 ? `+${p.toPar}` : p.toPar === 0 ? "E" : String(p.toPar),
+            String(stableford),
+            String(p.holesCompleted),
+          ]);
+        });
+      }
+      downloadCSV(`caz-masters-individual-results-${new Date().toISOString().slice(0, 10)}.csv`, indHeaders, indRows);
+
+      // Team results
+      const teamData = data.teamStableford || [];
+      const maxMembers = Math.max(...teamData.map((t: { members: unknown[] }) => t.members.length), 4);
+      const teamHeaders = ["Standing", "Team Name", "Total Stableford Points", "Holes Completed"];
+      for (let i = 1; i <= maxMembers; i++) teamHeaders.push(`Player ${i} (points)`);
+      const teamRows = teamData.map((t: { name: string; totalPoints: number; holesCompleted: number; members: { name: string; scores: { stableford: number }[] }[] }, i: number) => {
+        const row = [String(i + 1), t.name, String(t.totalPoints), String(t.holesCompleted)];
+        for (let j = 0; j < maxMembers; j++) {
+          const m = t.members[j];
+          if (m) {
+            const pts = m.scores.reduce((s: number, sc: { stableford: number }) => s + sc.stableford, 0);
+            row.push(`${m.name} (${pts})`);
+          } else {
+            row.push("");
+          }
+        }
+        return row;
+      });
+      downloadCSV(`caz-masters-team-results-${new Date().toISOString().slice(0, 10)}.csv`, teamHeaders, teamRows);
+    } catch {
+      setError("Failed to download results");
+    }
+  }
+
+  function downloadBeerTab() {
+    const headers = ["Player Name", "Email", "Team", "Total Shotgun Mulligans", "Total Owed ($)", "Payment Status", "Payment Method"];
+    const rows = beerTab.map((b) => {
+      const method = b.status === "paid_online" ? "Online" : b.status === "paid_manual" ? "Manual" : "Pending";
+      const status = b.status === "paid_online" || b.status === "paid_manual" ? "Paid" : "Unpaid";
+      return [b.name, b.email, b.team, String(b.count), `$${b.totalOwed}`, status, method];
+    });
+    downloadCSV(`caz-masters-beer-tab-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  }
+
   if (loading) return <p className="text-navy-500 py-8 text-center">Loading scores...</p>;
 
   const players = [...new Set(scores.map((s) => s.player.fullName))].sort();
@@ -176,9 +250,16 @@ export default function AdminScoring({ password }: { password: string }) {
             Beer Tab ({totalBeers})
           </button>
         </div>
-        <button onClick={fetchData} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          {view === "scores" && scores.length > 0 && (
+            <button onClick={downloadResults} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">
+              Download Results
+            </button>
+          )}
+          <button onClick={fetchData} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">
+            Refresh
+          </button>
+        </div>
       </div>
 
       {view === "scores" && (
@@ -282,19 +363,24 @@ export default function AdminScoring({ password }: { password: string }) {
             </div>
           </div>
 
-          {/* Send all button */}
-          {beerTab.some((b) => b.status === "unpaid") && (
-            <div className="mb-4">
+          {/* Actions */}
+          {beerTab.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4 items-center">
+              {beerTab.some((b) => b.status === "unpaid") && (
+                <button
+                  onClick={sendAllInvoices}
+                  disabled={sendingAll}
+                  className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-6 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                >
+                  {sendingAll ? "Sending..." : "Send All Invoices"}
+                </button>
+              )}
               <button
-                onClick={sendAllInvoices}
-                disabled={sendingAll}
-                className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-6 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+                onClick={downloadBeerTab}
+                className="bg-white border border-navy-200 text-navy-600 font-medium px-4 py-2.5 rounded-lg text-sm hover:bg-navy-50"
               >
-                {sendingAll ? "Sending..." : "Send All Invoices"}
+                Download Beer Tab
               </button>
-              <span className="text-xs text-navy-400 ml-3">
-                Emails a Stripe payment link to every unpaid player
-              </span>
             </div>
           )}
 
