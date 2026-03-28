@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         select: { id: true, fullName: true, genderFlight: true, email: true },
       },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { name: "asc" },
   });
 
   const freeAgents = await prisma.player.findMany({

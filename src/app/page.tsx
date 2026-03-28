@@ -3,8 +3,13 @@ import Link from "next/link";
 import CountdownTimer from "@/components/CountdownTimer";
 import SpotsCounter from "@/components/SpotsCounter";
 import { TOURNAMENT } from "@/lib/tournament";
+import { getTournamentSettings } from "@/lib/tournament-settings";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const { freeRegistration, entryFee } = await getTournamentSettings();
+
   return (
     <>
       {/* Hero — tighter */}
@@ -43,7 +48,7 @@ export default function Home() {
             href="/register"
             className="inline-block bg-gold-400 hover:bg-gold-300 text-navy-950 font-black text-lg sm:text-xl px-10 py-5 rounded-xl transition-all hover:scale-105 shadow-2xl uppercase tracking-wide"
           >
-            Let&apos;s Go &mdash; ${TOURNAMENT.entryFee}
+            {freeRegistration ? "Register" : `Let\u2019s Go \u2014 $${entryFee}`}
           </Link>
         </div>
       </section>
@@ -80,10 +85,12 @@ export default function Home() {
               <p className="text-xl sm:text-2xl font-bold text-navy-900">Caz Golf Club, Cazenovia NY</p>
             </div>
             <SpotsCounter />
-            <div>
-              <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">COST</p>
-              <p className="text-xl sm:text-2xl font-bold text-navy-900">$150 All-In</p>
-            </div>
+            {!freeRegistration && (
+              <div>
+                <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">COST</p>
+                <p className="text-xl sm:text-2xl font-bold text-navy-900">${entryFee} All-In</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -109,11 +116,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Your $150 Gets You — simple, like the OG site */}
+      {/* What's Included */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl sm:text-4xl font-black text-navy-900 uppercase mb-10">
-            Your $150 Gets You
+            {freeRegistration ? "What You Get" : `Your $${entryFee} Gets You`}
           </h2>
           <div className="space-y-8 text-left">
             <div className="flex items-start gap-5">

@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Save/update a single score
+// Save/update scores for a hole
 export async function POST(req: NextRequest) {
-  const { scorerId, pin, scores } = await req.json();
+  const { teamId, scorerKey, scores } = await req.json();
 
-  // Validate scorer
-  const scorerPin = await prisma.scorerPin.findFirst({
-    where: { playerId: scorerId, pin },
-    include: { player: { select: { teamId: true } } },
+  // Validate scorer via team lock
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: { activeScorerKey: true, tournamentId: true, members: { select: { id: true } } },
   });
-  if (!scorerPin) {
+  if (!team || team.activeScorerKey !== scorerKey) {
     return NextResponse.json({ error: "Invalid scorer credentials" }, { status: 401 });
   }
 
-  // Get team members to validate player IDs
-  const teamMembers = await prisma.player.findMany({
-    where: { teamId: scorerPin.player.teamId },
-    select: { id: true },
-  });
-  const memberIds = new Set(teamMembers.map((m) => m.id));
+  const memberIds = new Set(team.members.map((m) => m.id));
 
-  // Upsert each score
   const results = [];
   for (const score of scores) {
     if (!memberIds.has(score.playerId)) continue;
@@ -31,7 +25,7 @@ export async function POST(req: NextRequest) {
       where: {
         playerId_tournamentId_holeNumber: {
           playerId: score.playerId,
-          tournamentId: scorerPin.tournamentId,
+          tournamentId: team.tournamentId,
           holeNumber: score.holeNumber,
         },
       },
@@ -42,7 +36,7 @@ export async function POST(req: NextRequest) {
       },
       create: {
         playerId: score.playerId,
-        tournamentId: scorerPin.tournamentId,
+        tournamentId: team.tournamentId,
         holeNumber: score.holeNumber,
         strokes: score.strokes,
         shotgunBeer: score.shotgunBeer || false,

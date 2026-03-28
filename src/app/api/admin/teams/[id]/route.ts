@@ -32,6 +32,10 @@ export async function PATCH(
   if (typeof body.locked === "boolean") data.locked = body.locked;
   if (typeof body.maxSize === "number") data.maxSize = body.maxSize;
   if (typeof body.startingHole === "number" || body.startingHole === null) data.startingHole = body.startingHole;
+  if (body.unlockScorer === true) {
+    data.activeScorerName = null;
+    data.activeScorerKey = null;
+  }
 
   await prisma.team.update({ where: { id }, data });
   return NextResponse.json({ success: true });

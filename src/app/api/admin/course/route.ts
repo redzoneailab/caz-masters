@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
     numHoles: tournament?.numHoles || 18,
     shotgunStart: tournament?.shotgunStart ?? true,
     teeAssignments: tournament?.teeAssignments ?? null,
+    scorerPin: tournament?.scorerPin ?? "",
   });
 }
 

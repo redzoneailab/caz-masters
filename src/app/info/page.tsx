@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { TOURNAMENT } from "@/lib/tournament";
+import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
   title: "Information | The Caz Masters",
   description: "Everything you need to know about The Caz Masters — format, rules, course, prizes, and after party.",
 };
 
-export default function InfoPage() {
+export const dynamic = "force-dynamic";
+
+export default async function InfoPage() {
+  const { freeRegistration, entryFee } = await getTournamentSettings();
+
   return (
     <>
       {/* Hero */}
@@ -31,10 +36,12 @@ export default function InfoPage() {
               <p className="text-navy-400">Where</p>
               <p className="text-white font-bold">{TOURNAMENT.location}</p>
             </div>
-            <div className="bg-navy-900 border border-navy-700 rounded-lg px-5 py-3">
-              <p className="text-navy-400">Entry Fee</p>
-              <p className="text-white font-bold">${TOURNAMENT.entryFee}</p>
-            </div>
+            {!freeRegistration && (
+              <div className="bg-navy-900 border border-navy-700 rounded-lg px-5 py-3">
+                <p className="text-navy-400">Entry Fee</p>
+                <p className="text-white font-bold">${entryFee}</p>
+              </div>
+            )}
             <div className="bg-navy-900 border border-navy-700 rounded-lg px-5 py-3">
               <p className="text-navy-400">Field</p>
               <p className="text-white font-bold">{TOURNAMENT.maxPlayers} players</p>
@@ -211,7 +218,9 @@ export default function InfoPage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl font-black text-navy-900 uppercase mb-4">Ready?</h2>
           <p className="text-navy-600 mb-8">
-            72 spots. ${TOURNAMENT.entryFee} entry. All proceeds go to Caz Cares.
+            {freeRegistration
+              ? "72 spots. All proceeds go to Caz Cares."
+              : `72 spots. $${entryFee} entry. All proceeds go to Caz Cares.`}
           </p>
           <Link
             href="/register"

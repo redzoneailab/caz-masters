@@ -56,6 +56,13 @@ export async function sendConfirmationEmail(
   paymentStatus: string
 ) {
   const isPaid = paymentStatus === "paid_online";
+  const isFree = paymentStatus === "free";
+
+  const paymentLine = isPaid
+    ? "Paid - You're all set!"
+    : isFree
+    ? "Registered - Payment details to follow"
+    : "Pay day-of at check-in";
 
   await getResend().emails.send({
     from: FROM_ADDRESS,
@@ -71,9 +78,8 @@ export async function sendConfirmationEmail(
         <div style="background: #f0fdf0; border-radius: 8px; padding: 20px; margin: 20px 0;">
           <p style="margin: 4px 0;"><strong>Date:</strong> Friday, July 3rd, 2026</p>
           <p style="margin: 4px 0;"><strong>Location:</strong> Cazenovia Golf Club</p>
-          <p style="margin: 4px 0;"><strong>Payment:</strong> ${isPaid ? "Paid - You're all set!" : "Pay day-of at check-in ($150)"}</p>
+          <p style="margin: 4px 0;"><strong>Payment:</strong> ${paymentLine}</p>
         </div>
-        ${!isPaid ? '<p style="font-size: 14px; color: #666;">Remember to bring $150 cash or be ready to pay at check-in.</p>' : ""}
         <p style="font-size: 16px; color: #333;">See you on the course!</p>
         <p style="font-size: 14px; color: #999; margin-top: 40px;">The Caz Masters Golf Tournament</p>
       </div>

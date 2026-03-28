@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
     if (afterParty && afterParty.numGuests > 0) {
       const numGuests = Math.min(Math.max(1, afterParty.numGuests), 20);
       const numKids = Math.min(Math.max(0, afterParty.numKids || 0), 20);
-      // Check for existing after party registration
       const existingAP = await prisma.afterPartyRegistration.findUnique({ where: { email } });
       if (!existingAP) {
         afterPartyReg = await prisma.afterPartyRegistration.create({
@@ -110,6 +109,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Free registration mode — skip payment entirely
+    if (tournament.freeRegistration) {
+      await prisma.payment.create({
+        data: {
+          playerId: player.id,
+          amount: 0,
+          status: "unpaid",
+          method: "free",
+        },
+      });
+
+      try {
+        await sendConfirmationEmail(email, fullName, "free");
+      } catch {
+        // Don't fail registration if email fails
+      }
+
+      return NextResponse.json({ success: true, redirect: "/register/confirmation?status=free" });
+    }
+
     if (paymentMethod === "stripe") {
       // Build line items
       const lineItems: {
@@ -120,10 +139,10 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `The Caz Masters 2026 - Entry Fee`,
+              name: `The Caz Masters ${TOURNAMENT.year} - Entry Fee`,
               description: `Registration for ${fullName}`,
             },
-            unit_amount: TOURNAMENT.entryFeeCents,
+            unit_amount: tournament.entryFee,
           },
           quantity: 1,
         },
@@ -161,7 +180,7 @@ export async function POST(req: NextRequest) {
       await prisma.payment.create({
         data: {
           playerId: player.id,
-          amount: TOURNAMENT.entryFeeCents,
+          amount: tournament.entryFee,
           status: "unpaid",
           stripeSessionId: session.id,
           method: "stripe",
@@ -182,7 +201,7 @@ export async function POST(req: NextRequest) {
       await prisma.payment.create({
         data: {
           playerId: player.id,
-          amount: TOURNAMENT.entryFeeCents,
+          amount: tournament.entryFee,
           status: "unpaid",
           method: "day_of",
         },

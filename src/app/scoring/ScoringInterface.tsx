@@ -29,19 +29,29 @@ interface ScoreEntry {
   synced: boolean;
 }
 
+interface TeamOption {
+  id: string;
+  name: string;
+  activeScorerName: string | null;
+  memberNames: string[];
+}
+
 const STORAGE_KEY = "caz-scoring-data";
 
 export default function ScoringInterface() {
   // Auth state
-  const [fullName, setFullName] = useState("");
+  const [scorerName, setScorerName] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
 
   // Scoring state
-  const [scorerId, setScorerId] = useState("");
-  const [scorerPin, setScorerPin] = useState("");
+  const [teamId, setTeamId] = useState("");
+  const [scorerKey, setScorerKey] = useState("");
   const [teamName, setTeamName] = useState("");
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [holes, setHoles] = useState<Hole[]>([]);
@@ -79,9 +89,9 @@ export default function ScoringInterface() {
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (data.scorerId && data.pin) {
-          setScorerId(data.scorerId);
-          setScorerPin(data.pin);
+        if (data.teamId && data.scorerKey) {
+          setTeamId(data.teamId);
+          setScorerKey(data.scorerKey);
           setTeamName(data.teamName || "");
           setPlayers(data.players || []);
           setHoles(data.holes || []);
@@ -100,12 +110,23 @@ export default function ScoringInterface() {
     }
   }, []);
 
+  // Fetch teams list for auth form
+  useEffect(() => {
+    if (authed) return; // don't need teams list when already authed
+    setTeamsLoading(true);
+    fetch("/api/scoring/teams")
+      .then((r) => r.json())
+      .then((data) => setTeams(data.teams || []))
+      .catch(() => {})
+      .finally(() => setTeamsLoading(false));
+  }, [authed]);
+
   // Save to localStorage on score changes
   const saveToLocal = useCallback(() => {
     if (!authed) return;
     const data = {
-      scorerId,
-      pin: scorerPin,
+      teamId,
+      scorerKey,
       teamName,
       players,
       holes,
@@ -116,7 +137,7 @@ export default function ScoringInterface() {
       scores: Object.fromEntries(scores),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [authed, scorerId, scorerPin, teamName, players, holes, tournamentId, currentHole, startingHole, teeAssignments, scores]);
+  }, [authed, teamId, scorerKey, teamName, players, holes, tournamentId, currentHole, startingHole, teeAssignments, scores]);
 
   useEffect(() => { saveToLocal(); }, [saveToLocal]);
 
@@ -135,7 +156,7 @@ export default function ScoringInterface() {
       const res = await fetch("/api/scoring/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, pin }),
+        body: JSON.stringify({ teamId: selectedTeamId, scorerName, pin }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -144,8 +165,8 @@ export default function ScoringInterface() {
       }
       const data = await res.json();
       const teamStart = data.team.startingHole ?? 1;
-      setScorerId(data.scorer.id);
-      setScorerPin(pin);
+      setTeamId(data.team.id);
+      setScorerKey(data.scorerKey);
       setTeamName(data.team.name);
       setPlayers(data.players);
       setStartingHole(teamStart);
@@ -225,7 +246,7 @@ export default function ScoringInterface() {
       const res = await fetch("/api/scoring/scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scorerId, pin: scorerPin, scores: holeScores }),
+        body: JSON.stringify({ teamId, scorerKey, scores: holeScores }),
       });
       if (res.ok) {
         const newScores = new Map(scoreMap);
@@ -249,7 +270,7 @@ export default function ScoringInterface() {
       await fetch("/api/scoring/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scorerId, pin: scorerPin, scores: pending }),
+        body: JSON.stringify({ teamId, scorerKey, scores: pending }),
       });
       const newScores = new Map(scores);
       for (const s of pending) {
@@ -266,10 +287,11 @@ export default function ScoringInterface() {
   function logout() {
     localStorage.removeItem(STORAGE_KEY);
     setAuthed(false);
-    setScorerId("");
-    setScorerPin("");
-    setFullName("");
+    setTeamId("");
+    setScorerKey("");
+    setScorerName("");
     setPin("");
+    setSelectedTeamId("");
   }
 
   // Auth screen
@@ -278,31 +300,59 @@ export default function ScoringInterface() {
       <section className="min-h-screen bg-navy-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-black text-white text-center mb-2">Score Entry</h1>
-          <p className="text-navy-400 text-center text-sm mb-8">Sign in with your name and scorer PIN</p>
+          <p className="text-navy-400 text-center text-sm mb-8">Select your team and enter the scorer PIN</p>
           <form onSubmit={handleAuth} className="space-y-4">
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full name"
-              className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg placeholder:text-navy-500 focus:border-gold-400 focus:outline-none"
-              required
-              autoComplete="name"
-            />
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="Scorer PIN"
-              className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg tracking-[0.3em] text-center placeholder:text-navy-500 placeholder:tracking-normal focus:border-gold-400 focus:outline-none"
-              required
-              autoComplete="off"
-            />
+            <div>
+              <label className="block text-xs font-medium text-navy-400 mb-1.5">Your Name</label>
+              <input
+                type="text"
+                value={scorerName}
+                onChange={(e) => setScorerName(e.target.value)}
+                placeholder="Your full name"
+                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg placeholder:text-navy-500 focus:border-gold-400 focus:outline-none"
+                required
+                autoComplete="name"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-navy-400 mb-1.5">Team</label>
+              {teamsLoading ? (
+                <div className="w-full rounded-xl bg-navy-900 border border-navy-700 text-navy-500 px-4 py-3.5 text-lg">
+                  Loading teams...
+                </div>
+              ) : (
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => setSelectedTeamId(e.target.value)}
+                  className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg focus:border-gold-400 focus:outline-none"
+                  required
+                >
+                  <option value="">Select your team...</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.memberNames.join(", ")})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-navy-400 mb-1.5">Scorer PIN</label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="Enter PIN"
+                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg tracking-[0.3em] text-center placeholder:text-navy-500 placeholder:tracking-normal focus:border-gold-400 focus:outline-none"
+                required
+                autoComplete="off"
+              />
+            </div>
             {authError && <p className="text-red-400 text-sm text-center">{authError}</p>}
             <button
               type="submit"
-              disabled={authLoading}
+              disabled={authLoading || !selectedTeamId}
               className="w-full bg-gold-400 hover:bg-gold-300 text-navy-950 font-black py-3.5 rounded-xl text-lg uppercase tracking-wider transition-colors disabled:opacity-50"
             >
               {authLoading ? "Signing in..." : "Start Scoring"}

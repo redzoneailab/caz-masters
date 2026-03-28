@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TOURNAMENT } from "@/lib/tournament";
 
 interface FormData {
@@ -24,20 +24,34 @@ export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Tournament settings from DB
+  const [freeRegistration, setFreeRegistration] = useState(false);
+  const [entryFee, setEntryFee] = useState(TOURNAMENT.entryFee);
+
   // After party state
   const [addAfterParty, setAddAfterParty] = useState(false);
   const [afterPartyGuests, setAfterPartyGuests] = useState(1);
   const [afterPartyKids, setAfterPartyKids] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/tournament-info")
+      .then((r) => r.json())
+      .then((data) => {
+        setFreeRegistration(data.freeRegistration ?? false);
+        setEntryFee(data.entryFee ?? TOURNAMENT.entryFee);
+      })
+      .catch(() => {});
+  }, []);
 
   function update(field: keyof FormData, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   const afterPartyTotal = afterPartyGuests * TOURNAMENT.afterPartyPrice;
-  const tournamentTotal = TOURNAMENT.entryFee;
+  const tournamentTotal = entryFee;
   const grandTotal = tournamentTotal + (addAfterParty ? afterPartyTotal : 0);
 
-  async function handleSubmit(paymentMethod: "stripe" | "day_of") {
+  async function handleSubmit(paymentMethod: "stripe" | "day_of" | "free") {
     setError("");
     setLoading(true);
 
@@ -59,7 +73,9 @@ export default function RegistrationForm() {
         return;
       }
 
-      if (paymentMethod === "stripe" && data.checkoutUrl) {
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      } else if (paymentMethod === "stripe" && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
         window.location.href = "/register/confirmation?status=day_of";
@@ -233,45 +249,62 @@ export default function RegistrationForm() {
         )}
       </div>
 
-      {/* Payment */}
+      {/* Payment / Register */}
       <div className="border-t-2 border-navy-100 pt-6 space-y-3">
-        {/* Price summary */}
-        {addAfterParty && (
-          <div className="bg-navy-50 rounded-xl p-4 space-y-2 text-sm">
-            <div className="flex justify-between text-navy-600">
-              <span>Tournament entry</span>
-              <span>${tournamentTotal}</span>
-            </div>
-            <div className="flex justify-between text-navy-600">
-              <span>After Party ({afterPartyGuests} guest{afterPartyGuests > 1 ? "s" : ""})</span>
-              <span>${afterPartyTotal}</span>
-            </div>
-            <div className="flex justify-between font-bold text-navy-900 border-t border-navy-200 pt-2">
-              <span>Total</span>
-              <span>${grandTotal}</span>
-            </div>
-          </div>
+        {freeRegistration ? (
+          <>
+            <button
+              onClick={() => handleSubmit("free")}
+              disabled={loading || !isValid}
+              className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
+            >
+              {loading ? "Hold tight..." : "Register"}
+            </button>
+            <p className="text-center text-xs text-navy-400 mt-2">
+              Payment will be collected later.
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Price summary */}
+            {addAfterParty && (
+              <div className="bg-navy-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between text-navy-600">
+                  <span>Tournament entry</span>
+                  <span>${tournamentTotal}</span>
+                </div>
+                <div className="flex justify-between text-navy-600">
+                  <span>After Party ({afterPartyGuests} guest{afterPartyGuests > 1 ? "s" : ""})</span>
+                  <span>${afterPartyTotal}</span>
+                </div>
+                <div className="flex justify-between font-bold text-navy-900 border-t border-navy-200 pt-2">
+                  <span>Total</span>
+                  <span>${grandTotal}</span>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => handleSubmit("stripe")}
+              disabled={loading || !isValid}
+              className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
+            >
+              {loading ? "Hold tight..." : `Pay $${grandTotal} Now`}
+            </button>
+
+            <button
+              onClick={() => handleSubmit("day_of")}
+              disabled={loading || !isValid}
+              className="w-full bg-navy-900 hover:bg-navy-800 disabled:bg-navy-200 disabled:text-navy-400 text-white font-bold py-4 rounded-xl transition-all text-base"
+            >
+              {loading ? "Hold tight..." : "I'll Pay Day-Of"}
+            </button>
+
+            <p className="text-center text-xs text-navy-400 mt-2">
+              Card &amp; Venmo accepted via Stripe. Or just bring cash.
+            </p>
+          </>
         )}
-
-        <button
-          onClick={() => handleSubmit("stripe")}
-          disabled={loading || !isValid}
-          className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
-        >
-          {loading ? "Hold tight..." : `Pay $${grandTotal} Now`}
-        </button>
-
-        <button
-          onClick={() => handleSubmit("day_of")}
-          disabled={loading || !isValid}
-          className="w-full bg-navy-900 hover:bg-navy-800 disabled:bg-navy-200 disabled:text-navy-400 text-white font-bold py-4 rounded-xl transition-all text-base"
-        >
-          {loading ? "Hold tight..." : "I'll Pay Day-Of"}
-        </button>
-
-        <p className="text-center text-xs text-navy-400 mt-2">
-          Card &amp; Venmo accepted via Stripe. Or just bring cash.
-        </p>
       </div>
     </div>
   );

@@ -34,6 +34,8 @@ interface Player {
 interface Tournament {
   id: string;
   registrationOpen: boolean;
+  freeRegistration: boolean;
+  entryFee: number;
   maxPlayers: number;
 }
 
@@ -103,6 +105,41 @@ export default function AdminDashboard() {
       setTournament({ ...tournament, registrationOpen: !tournament.registrationOpen });
     } catch {
       setError("Failed to update tournament");
+    }
+  }
+
+  async function toggleFreeRegistration() {
+    if (!tournament) return;
+    try {
+      await fetch("/api/admin/tournament", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${password}`,
+        },
+        body: JSON.stringify({ freeRegistration: !tournament.freeRegistration }),
+      });
+      setTournament({ ...tournament, freeRegistration: !tournament.freeRegistration });
+    } catch {
+      setError("Failed to update tournament");
+    }
+  }
+
+  async function updateEntryFee(feeDollars: number) {
+    if (!tournament) return;
+    const feeCents = Math.round(feeDollars * 100);
+    try {
+      await fetch("/api/admin/tournament", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${password}`,
+        },
+        body: JSON.stringify({ entryFee: feeCents }),
+      });
+      setTournament({ ...tournament, entryFee: feeCents });
+    } catch {
+      setError("Failed to update entry fee");
     }
   }
 
@@ -267,6 +304,31 @@ export default function AdminDashboard() {
               >
                 {tournament?.registrationOpen ? "Close Registration" : "Open Registration"}
               </button>
+              <button
+                onClick={toggleFreeRegistration}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  tournament?.freeRegistration
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-navy-100 text-navy-600 hover:bg-navy-200"
+                }`}
+              >
+                {tournament?.freeRegistration ? "Free Reg: ON" : "Free Reg: OFF"}
+              </button>
+              {!tournament?.freeRegistration && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm text-navy-500">Fee: $</span>
+                  <input
+                    type="number"
+                    defaultValue={tournament ? tournament.entryFee / 100 : 150}
+                    min={0}
+                    className="w-20 border border-navy-200 rounded-lg px-2 py-1.5 text-sm"
+                    onBlur={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val) && val > 0) updateEntryFee(val);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Stats */}

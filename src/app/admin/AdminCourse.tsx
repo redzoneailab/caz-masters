@@ -26,10 +26,10 @@ interface Course {
   holes: CourseHole[];
 }
 
-interface ScorerPinEntry {
+interface TeamScorerInfo {
   id: string;
-  pin: string;
-  player: { id: string; fullName: string; teamId: string | null; team: { name: string } | null };
+  name: string;
+  activeScorerName: string | null;
 }
 
 interface SearchResult {
@@ -43,11 +43,12 @@ interface SearchResult {
 
 export default function AdminCourse({ password }: { password: string }) {
   const [course, setCourse] = useState<Course | null>(null);
-  const [pins, setPins] = useState<ScorerPinEntry[]>([]);
   const [tournamentId, setTournamentId] = useState("");
   const [numHoles, setNumHoles] = useState(18);
   const [shotgunStart, setShotgunStart] = useState(true);
   const [teeAssignments, setTeeAssignments] = useState<TeeAssignments>({});
+  const [scorerPin, setScorerPin] = useState("");
+  const [teamScorers, setTeamScorers] = useState<TeamScorerInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingHole, setEditingHole] = useState<string | null>(null);
@@ -58,11 +59,6 @@ export default function AdminCourse({ password }: { password: string }) {
   const [searching, setSearching] = useState(false);
   const [importing, setImporting] = useState(false);
 
-  // New PIN form
-  const [newPinPlayerId, setNewPinPlayerId] = useState("");
-  const [newPinValue, setNewPinValue] = useState("");
-  const [players, setPlayers] = useState<{ id: string; fullName: string }[]>([]);
-
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${password}`,
@@ -71,10 +67,9 @@ export default function AdminCourse({ password }: { password: string }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [courseRes, pinsRes, playersRes] = await Promise.all([
+      const [courseRes, teamsRes] = await Promise.all([
         fetch("/api/admin/course", { headers: { Authorization: `Bearer ${password}` } }),
-        fetch("/api/admin/scorer-pins", { headers: { Authorization: `Bearer ${password}` } }),
-        fetch("/api/admin/players", { headers: { Authorization: `Bearer ${password}` } }),
+        fetch("/api/admin/teams", { headers: { Authorization: `Bearer ${password}` } }),
       ]);
 
       if (courseRes.ok) {
@@ -84,15 +79,18 @@ export default function AdminCourse({ password }: { password: string }) {
         setNumHoles(data.numHoles || 18);
         setShotgunStart(data.shotgunStart ?? true);
         setTeeAssignments(data.teeAssignments || {});
+        setScorerPin(data.scorerPin || "");
       }
-      if (pinsRes.ok) {
-        const data = await pinsRes.json();
-        setPins(data.pins);
+      if (teamsRes.ok) {
+        const data = await teamsRes.json();
         if (!tournamentId) setTournamentId(data.tournamentId || "");
-      }
-      if (playersRes.ok) {
-        const data = await playersRes.json();
-        setPlayers(data.players.map((p: { id: string; fullName: string }) => ({ id: p.id, fullName: p.fullName })));
+        setTeamScorers(
+          data.teams.map((t: { id: string; name: string; activeScorerName: string | null }) => ({
+            id: t.id,
+            name: t.name,
+            activeScorerName: t.activeScorerName,
+          }))
+        );
       }
     } catch {
       setError("Failed to load data");
@@ -302,34 +300,29 @@ export default function AdminCourse({ password }: { password: string }) {
     }
   }
 
-  async function addPin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newPinPlayerId || !newPinValue) return;
+  async function saveScorerPin(newPin: string) {
     try {
-      const res = await fetch("/api/admin/scorer-pins", {
-        method: "POST",
+      await fetch("/api/admin/tournament", {
+        method: "PATCH",
         headers,
-        body: JSON.stringify({ playerId: newPinPlayerId, pin: newPinValue, tournamentId }),
+        body: JSON.stringify({ scorerPin: newPin }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Failed to add PIN");
-        return;
-      }
-      setNewPinPlayerId("");
-      setNewPinValue("");
-      await fetchData();
+      setScorerPin(newPin);
     } catch {
-      setError("Failed to add PIN");
+      setError("Failed to save scorer PIN");
     }
   }
 
-  async function deletePin(pinId: string) {
+  async function unlockTeamScorer(teamId: string) {
     try {
-      await fetch(`/api/admin/scorer-pins?id=${pinId}`, { method: "DELETE", headers });
+      await fetch(`/api/admin/teams/${teamId}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ unlockScorer: true }),
+      });
       await fetchData();
     } catch {
-      setError("Failed to delete PIN");
+      setError("Failed to unlock scorer");
     }
   }
 
@@ -724,64 +717,60 @@ export default function AdminCourse({ password }: { password: string }) {
         )}
       </div>
 
-      {/* Scorer PINs */}
+      {/* Scorer PIN */}
       <div>
-        <h2 className="text-lg font-bold text-navy-900 mb-4">Scorer PINs</h2>
-
-        <form onSubmit={addPin} className="bg-white rounded-xl border border-navy-100 p-5 mb-4">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-navy-600 mb-1">Player</label>
-              <select
-                value={newPinPlayerId}
-                onChange={(e) => setNewPinPlayerId(e.target.value)}
-                className="w-full border border-navy-200 rounded-lg px-3 py-2 text-sm"
+        <h2 className="text-lg font-bold text-navy-900 mb-4">Scorer PIN</h2>
+        <div className="bg-white rounded-xl border border-navy-100 p-5 space-y-4">
+          <div>
+            <p className="text-sm text-navy-600 mb-2">
+              One universal PIN for all scorers. Players go to <span className="font-mono text-navy-900">/scoring</span>, pick their team, and enter this PIN.
+            </p>
+            <div className="flex gap-3 items-end">
+              <div className="w-40">
+                <label className="block text-xs font-medium text-navy-600 mb-1">PIN (4-6 digits)</label>
+                <input
+                  type="text"
+                  value={scorerPin}
+                  onChange={(e) => setScorerPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="e.g. 1234"
+                  className="w-full border border-navy-200 rounded-lg px-3 py-2 text-sm tracking-[0.3em] text-center font-mono"
+                />
+              </div>
+              <button
+                onClick={() => saveScorerPin(scorerPin)}
+                disabled={scorerPin.length < 4}
+                className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50"
               >
-                <option value="">Select a player...</option>
-                {players.map((p) => (
-                  <option key={p.id} value={p.id}>{p.fullName}</option>
-                ))}
-              </select>
+                Save
+              </button>
             </div>
-            <div className="w-32">
-              <label className="block text-xs font-medium text-navy-600 mb-1">PIN</label>
-              <input
-                type="text"
-                value={newPinValue}
-                onChange={(e) => setNewPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="4+ digits"
-                className="w-full border border-navy-200 rounded-lg px-3 py-2 text-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-4 py-2 rounded-lg text-sm"
-            >
-              Add
-            </button>
           </div>
-        </form>
+        </div>
+      </div>
 
-        {pins.length === 0 ? (
-          <p className="text-navy-400 text-sm">No scorer PINs set. Add PINs for designated scorers.</p>
+      {/* Active Scorers */}
+      <div>
+        <h2 className="text-lg font-bold text-navy-900 mb-4">Active Scorers</h2>
+        {teamScorers.filter((t) => t.activeScorerName).length === 0 ? (
+          <p className="text-navy-400 text-sm">No teams are currently being scored.</p>
         ) : (
           <div className="bg-white rounded-xl border border-navy-100 divide-y divide-navy-50">
-            {pins.map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium text-navy-900">{entry.player.fullName}</p>
-                  <p className="text-xs text-navy-500">
-                    {entry.player.team ? `Team: ${entry.player.team.name}` : "No team"} &middot; PIN: {entry.pin}
-                  </p>
+            {teamScorers
+              .filter((t) => t.activeScorerName)
+              .map((team) => (
+                <div key={team.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-navy-900">{team.name}</p>
+                    <p className="text-xs text-navy-500">Scorer: {team.activeScorerName}</p>
+                  </div>
+                  <button
+                    onClick={() => unlockTeamScorer(team.id)}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium"
+                  >
+                    Unlock
+                  </button>
                 </div>
-                <button
-                  onClick={() => deletePin(entry.id)}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>

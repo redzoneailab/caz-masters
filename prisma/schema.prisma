@@ -17,17 +17,18 @@ model Tournament {
   registrationOpen   Boolean     @default(true)
   teamsLocked        Boolean     @default(false)
   entryFee           Int         @default(15000)
+  freeRegistration   Boolean     @default(false)
   numHoles           Int         @default(18)
   shotgunStart       Boolean     @default(true)
   teeAssignments     Json?
   finalized          Boolean     @default(false)
+  scorerPin          String?
   courseId            String?
   course             Course?     @relation(fields: [courseId], references: [id])
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   players            Player[]
   teams              Team[]
-  scorerPins         ScorerPin[]
   scores             Score[]
 }
 
@@ -49,7 +50,6 @@ model Player {
   userAccountId   String?
   userAccount     UserAccount? @relation(fields: [userAccountId], references: [id])
   scores          Score[]
-  scorerPin       ScorerPin?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -73,11 +73,13 @@ model Team {
   name          String
   tournamentId  String
   tournament    Tournament @relation(fields: [tournamentId], references: [id])
-  locked        Boolean    @default(false)
-  maxSize       Int        @default(4)
-  startingHole  Int?
-  members       Player[]
-  createdAt     DateTime   @default(now())
+  locked            Boolean    @default(false)
+  maxSize           Int        @default(4)
+  startingHole      Int?
+  activeScorerName  String?
+  activeScorerKey   String?
+  members           Player[]
+  createdAt         DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   @@unique([name, tournamentId])
@@ -186,16 +188,6 @@ model TeeBox {
   updatedAt    DateTime   @updatedAt
 
   @@unique([courseHoleId, name])
-}
-
-model ScorerPin {
-  id           String     @id @default(cuid())
-  playerId     String     @unique
-  player       Player     @relation(fields: [playerId], references: [id])
-  pin          String
-  tournamentId String
-  tournament   Tournament @relation(fields: [tournamentId], references: [id])
-  createdAt    DateTime   @default(now())
 }
 
 model Score {

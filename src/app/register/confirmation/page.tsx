@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
   title: "LET'S FUCKING GO | The Caz Masters",
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function ConfirmationPage({
   searchParams,
@@ -12,7 +15,9 @@ export default async function ConfirmationPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
+  const { freeRegistration, entryFee } = await getTournamentSettings();
   const isPaid = status === "paid";
+  const isFree = status === "free" || freeRegistration;
 
   return (
     <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
@@ -40,10 +45,14 @@ export default async function ConfirmationPage({
           <p className="text-gold-400 font-bold text-lg mb-8">
             Paid up and ready to rip.
           </p>
+        ) : isFree ? (
+          <p className="text-gold-400 font-bold text-lg mb-8">
+            You&apos;re registered. We&apos;ll handle payment details later.
+          </p>
         ) : (
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 mb-8">
             <p className="text-white font-bold">
-              Bring $150 to check-in. Cash or card.
+              Bring ${entryFee} to check-in. Cash or card.
             </p>
           </div>
         )}
