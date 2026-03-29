@@ -75,7 +75,7 @@ export default async function Home() {
       {/* Quick Details — flat, no sub-text */}
       <section className="py-14 sm:py-18 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+          <div className="flex flex-wrap justify-center gap-8 sm:gap-12 text-center">
             <div>
               <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">WHEN</p>
               <p className="text-xl sm:text-2xl font-bold text-navy-900">Friday, July 3rd, 2026</p>
@@ -100,7 +100,7 @@ export default async function Home() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {[
             { src: "/images/hero.jpg", alt: "Tournament action" },
-            { src: "/images/broiler.jpg", alt: "The Broiler" },
+            { src: "/images/broiler.jpg", alt: "The Broiler", position: "center 20%" },
             { src: "/images/knees-weak.jpg", alt: "Knees weak, arms are heavy" },
             { src: "/images/guys-dudes-3.jpg", alt: "The course" },
           ].map((img) => (
@@ -110,6 +110,7 @@ export default async function Home() {
                 alt={img.alt}
                 fill
                 className="object-cover hover:scale-105 transition-transform duration-500"
+                style={img.position ? { objectPosition: img.position } : undefined}
               />
             </div>
           ))}
