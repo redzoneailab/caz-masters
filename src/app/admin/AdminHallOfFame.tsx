@@ -15,7 +15,9 @@ interface HoFEntry {
 const CATEGORIES = [
   { value: "mens_individual", label: "Men's Champion" },
   { value: "womens_individual", label: "Women's Champion" },
+  { value: "senior_individual", label: "Senior Champion" },
   { value: "team", label: "Winning Team" },
+  { value: "shotgun_champion", label: "Shotgun Champion" },
   { value: "special_award", label: "Special Award" },
 ];
 
@@ -217,6 +219,8 @@ export default function AdminHallOfFame({ password }: { password: string }) {
                         <span className="text-navy-500 ml-1">
                           ({entry.category === "team"
                             ? `${entry.score} Stableford pts`
+                            : entry.category === "shotgun_champion"
+                            ? `${entry.score} beers`
                             : `${entry.score} strokes`})
                         </span>
                       )}

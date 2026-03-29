@@ -22,6 +22,7 @@ function stablefordPoints(strokes: number, par: number): number {
 const CATEGORIES: Record<string, string> = {
   mens_individual: "Men's Champion",
   womens_individual: "Women's Champion",
+  senior_individual: "Senior Champion",
   team: "Winning Team",
   shotgun_champion: "Shotgun Champion",
   special_award: "Special Award",
@@ -39,6 +40,7 @@ const CHAMPION_PHOTOS: Record<number, { src: string; label: string }[]> = {
 const CATEGORY_ICONS: Record<string, string> = {
   mens_individual: "\uD83C\uDFC6",
   womens_individual: "\uD83C\uDFC6",
+  senior_individual: "\uD83C\uDFC6",
   team: "\uD83E\uDD4A",
   shotgun_champion: "\uD83C\uDF7A",
   special_award: "\u2B50",
@@ -364,7 +366,7 @@ export default async function HistoryPage() {
                           </p>
                         )}
                         <div className="grid sm:grid-cols-2 gap-5">
-                          {(["mens_individual", "womens_individual", "team", "shotgun_champion", "special_award"] as const).map((cat) => {
+                          {(["mens_individual", "womens_individual", "senior_individual", "team", "shotgun_champion", "special_award"] as const).map((cat) => {
                             const catEntries = yearData.entries.filter((e) => e.category === cat);
                             if (catEntries.length === 0) return null;
                             return (
@@ -382,6 +384,8 @@ export default async function HistoryPage() {
                                           <span className="text-navy-400 font-medium text-base ml-2">
                                             {cat === "team"
                                               ? `${entry.score} pts`
+                                              : cat === "shotgun_champion"
+                                              ? `${entry.score} beers`
                                               : entry.score}
                                           </span>
                                         )}
