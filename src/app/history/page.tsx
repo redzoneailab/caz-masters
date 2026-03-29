@@ -30,18 +30,19 @@ const CATEGORIES: Record<string, string> = {
 
 // Champion photos by year (static assets)
 const CHAMPION_PHOTOS: Record<number, { src: string; label: string }[]> = {
-  2015: [{ src: "/images/champion-2015.png", label: "2015 Champion" }],
-  2016: [{ src: "/images/champion-2016.jpg", label: "2016 Champion" }],
+  2014: [{ src: "/images/champion-2014.png", label: "2014 Champion" }],
+  2015: [{ src: "/images/champion-2015.jpg", label: "2015 Champion" }],
+  2016: [{ src: "/images/champion-2016.png", label: "2016 Champion" }],
   2017: [{ src: "/images/champion-2017.png", label: "2017 Champion" }],
-  2018: [{ src: "/images/champion-2018.png", label: "2018 Champion" }],
-  2019: [{ src: "/images/team-winner-2019.jpg", label: "2019 Team Champs" }],
+  2018: [{ src: "/images/team-winner-2018.jpg", label: "2018 Team Champs" }],
+  2024: [{ src: "/images/2024 winners.jpg", label: "2024 Winners" }],
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
   mens_individual: "\uD83C\uDFC6",
   womens_individual: "\uD83C\uDFC6",
   senior_individual: "\uD83C\uDFC6",
-  team: "\uD83E\uDD4A",
+  team: "\uD83C\uDFC5",
   shotgun_champion: "\uD83C\uDF7A",
   special_award: "\u2B50",
 };

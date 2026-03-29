@@ -108,11 +108,11 @@ export default function AboutPage() {
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { src: "/images/champion-2015.png", label: "2015" },
-              { src: "/images/champion-2016.jpg", label: "2016" },
+              { src: "/images/champion-2014.png", label: "2014" },
+              { src: "/images/champion-2015.jpg", label: "2015" },
+              { src: "/images/champion-2016.png", label: "2016" },
               { src: "/images/champion-2017.png", label: "2017" },
-              { src: "/images/champion-2018.png", label: "2018" },
-              { src: "/images/team-winner-2019.jpg", label: "2019" },
+              { src: "/images/team-winner-2018.jpg", label: "2018" },
               { src: "/images/group-2018.jpg", label: "The Crew" },
             ].map((photo) => (
               <div key={photo.src} className="group">

@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 const DRIVE_URL = "https://drive.google.com/drive/folders/1dtg69-rTD89a8chqdhxqlztsQMTUnxoU";
 
 const PREVIEW_IMAGES = [
-  { src: "/images/champion-2018.png", alt: "2018 Champion" },
+  { src: "/images/champion-2017.png", alt: "2017 Champion" },
   { src: "/images/group-2018.jpg", alt: "Group photo 2018" },
   { src: "/images/jacket-handoff-2019.jpg", alt: "Green jacket handoff 2019" },
   { src: "/images/guys-dudes-1.jpg", alt: "The guys" },
   { src: "/images/fore-america.jpg", alt: "Fore America" },
-  { src: "/images/team-winner-2019.jpg", alt: "Team winners 2019" },
-  { src: "/images/champion-2017.png", alt: "2017 Champion" },
+  { src: "/images/team-winner-2018.jpg", alt: "Team winners 2018" },
+  { src: "/images/champion-2016.png", alt: "2016 Champion" },
   { src: "/images/broiler.jpg", alt: "On the course" },
   { src: "/images/ultimate-power.jpg", alt: "Ultimate power" },
 ];
