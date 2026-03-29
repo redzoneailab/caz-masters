@@ -6,8 +6,8 @@ import { randomUUID } from "crypto";
 export async function POST(req: NextRequest) {
   const { teamId, scorerName, pin, scorerKey: existingKey } = await req.json();
 
-  if (!teamId || !pin) {
-    return NextResponse.json({ error: "Team and PIN required" }, { status: 400 });
+  if (!pin) {
+    return NextResponse.json({ error: "PIN required" }, { status: 400 });
   }
 
   const tournament = await prisma.tournament.findUnique({
@@ -33,17 +33,56 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
   }
 
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    include: {
-      members: {
-        select: { id: true, fullName: true, genderFlight: true },
-        orderBy: { fullName: "asc" },
+  // Resolve team: by teamId (legacy/cached sessions) or by scorer name lookup
+  let team;
+  if (teamId) {
+    team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        members: {
+          select: { id: true, fullName: true, genderFlight: true },
+          orderBy: { fullName: "asc" },
+        },
       },
-    },
-  });
-  if (!team || team.tournamentId !== tournament.id) {
-    return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    });
+    if (!team || team.tournamentId !== tournament.id) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+  } else if (scorerName) {
+    // Look up player by name, find their team
+    const player = await prisma.player.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        fullName: { equals: scorerName, mode: "insensitive" },
+      },
+      select: { teamId: true },
+    });
+    if (!player) {
+      return NextResponse.json(
+        { error: "No registration found for that name. Check your spelling or contact the tournament organizer." },
+        { status: 404 }
+      );
+    }
+    if (!player.teamId) {
+      return NextResponse.json(
+        { error: "You're not assigned to a team yet. Contact the tournament organizer." },
+        { status: 400 }
+      );
+    }
+    team = await prisma.team.findUnique({
+      where: { id: player.teamId },
+      include: {
+        members: {
+          select: { id: true, fullName: true, genderFlight: true },
+          orderBy: { fullName: "asc" },
+        },
+      },
+    });
+    if (!team) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+  } else {
+    return NextResponse.json({ error: "Name required" }, { status: 400 });
   }
 
   // Check scorer lock

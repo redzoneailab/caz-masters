@@ -29,25 +29,79 @@ interface ScoreEntry {
   synced: boolean;
 }
 
-interface TeamOption {
-  id: string;
-  name: string;
-  activeScorerName: string | null;
-  memberNames: string[];
-}
-
 const STORAGE_KEY = "caz-scoring-data";
+
+// Golf score decoration component
+function ScoreDecoration({
+  strokes,
+  par,
+  children,
+}: {
+  strokes: number;
+  par: number;
+  children: React.ReactNode;
+}) {
+  const diff = strokes - par;
+
+  const color =
+    diff <= -2
+      ? "text-yellow-400"
+      : diff === -1
+      ? "text-red-400"
+      : diff === 0
+      ? "text-white"
+      : "text-white/70";
+
+  const borderColor =
+    diff <= -2
+      ? "border-yellow-400"
+      : diff === -1
+      ? "border-red-400"
+      : diff === 1
+      ? "border-white/50"
+      : diff >= 2
+      ? "border-white/40"
+      : "";
+
+  const isCircle = diff <= -1; // birdie or better = circle
+  const isSquare = diff >= 1; // bogey or worse = square
+  const isDouble = diff <= -2 || diff >= 2; // eagle/double bogey = double
+
+  return (
+    <div className="relative flex items-center justify-center w-[88px] h-[88px] transition-all duration-300">
+      {/* Outer decoration */}
+      {(isCircle || isSquare) && (
+        <div
+          className={`absolute inset-0 transition-all duration-300 border-[3px] ${borderColor} ${
+            isCircle ? "rounded-full" : "rounded-lg"
+          }`}
+        />
+      )}
+      {/* Inner decoration (double) */}
+      {isDouble && (
+        <div
+          className={`absolute inset-[6px] transition-all duration-300 border-[3px] ${borderColor} ${
+            isCircle ? "rounded-full" : "rounded-lg"
+          }`}
+        />
+      )}
+      {/* Score number */}
+      <span
+        className={`text-5xl font-black tabular-nums relative z-10 transition-colors duration-300 ${color}`}
+      >
+        {children}
+      </span>
+    </div>
+  );
+}
 
 export default function ScoringInterface() {
   // Auth state
   const [scorerName, setScorerName] = useState("");
-  const [selectedTeamId, setSelectedTeamId] = useState("");
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
-  const [teams, setTeams] = useState<TeamOption[]>([]);
-  const [teamsLoading, setTeamsLoading] = useState(true);
 
   // Scoring state
   const [teamId, setTeamId] = useState("");
@@ -110,17 +164,6 @@ export default function ScoringInterface() {
     }
   }, []);
 
-  // Fetch teams list for auth form
-  useEffect(() => {
-    if (authed) return;
-    setTeamsLoading(true);
-    fetch("/api/scoring/teams")
-      .then((r) => r.json())
-      .then((data) => setTeams(data.teams || []))
-      .catch(() => {})
-      .finally(() => setTeamsLoading(false));
-  }, [authed]);
-
   // Save to localStorage on score changes
   const saveToLocal = useCallback(() => {
     if (!authed) return;
@@ -156,7 +199,7 @@ export default function ScoringInterface() {
       const res = await fetch("/api/scoring/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId: selectedTeamId, scorerName, pin }),
+        body: JSON.stringify({ scorerName, pin }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -327,16 +370,15 @@ export default function ScoringInterface() {
     setScorerKey("");
     setScorerName("");
     setPin("");
-    setSelectedTeamId("");
   }
 
-  // Auth screen
+  // Auth screen — name + PIN only, team auto-matched
   if (!authed) {
     return (
       <section className="min-h-screen bg-navy-950 flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-black text-white text-center mb-2">Score Entry</h1>
-          <p className="text-white/60 text-center text-sm mb-8">Select your team and enter the scorer PIN</p>
+          <p className="text-white/60 text-center text-sm mb-8">Enter your name and the scorer PIN</p>
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-white/70 mb-1.5">Your Name</label>
@@ -349,28 +391,6 @@ export default function ScoringInterface() {
                 required
                 autoComplete="name"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/70 mb-1.5">Team</label>
-              {teamsLoading ? (
-                <div className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white/40 px-4 py-3.5 text-lg">
-                  Loading teams...
-                </div>
-              ) : (
-                <select
-                  value={selectedTeamId}
-                  onChange={(e) => setSelectedTeamId(e.target.value)}
-                  className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg focus:border-gold-400 focus:outline-none"
-                  required
-                >
-                  <option value="">Select your team...</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.memberNames.join(", ")})
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-white/70 mb-1.5">Scorer PIN</label>
@@ -388,7 +408,7 @@ export default function ScoringInterface() {
             {authError && <p className="text-red-400 text-sm text-center">{authError}</p>}
             <button
               type="submit"
-              disabled={authLoading || !selectedTeamId}
+              disabled={authLoading || !scorerName.trim()}
               className="w-full bg-gold-400 hover:bg-gold-300 text-navy-950 font-black py-3.5 rounded-xl text-lg uppercase tracking-wider transition-colors disabled:opacity-50"
             >
               {authLoading ? "Signing in..." : "Start Scoring"}
@@ -473,31 +493,45 @@ export default function ScoringInterface() {
             const score = getScore(player.id, hole.holeNumber);
             const playerPar = getParForPlayer(hole, player.genderFlight);
             const diff = score.strokes - playerPar;
-            const diffColor = diff < 0 ? "text-red-400" : diff === 0 ? "text-white" : diff === 1 ? "text-white/60" : "text-white/40";
             const diffLabel = diff < 0 ? diff.toString() : diff === 0 ? "E" : `+${diff}`;
+            const diffColor =
+              diff <= -2
+                ? "text-yellow-400"
+                : diff === -1
+                ? "text-red-400"
+                : diff === 0
+                ? "text-white"
+                : "text-white/50";
             const isMulligan = score.shotgunBeer && score.rehit;
 
             return (
               <div key={player.id} className="bg-navy-900 rounded-xl p-4 border border-navy-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-white font-semibold">{player.fullName}</p>
-                    <p className="text-white/50 text-xs">{player.genderFlight} &middot; Par {playerPar}</p>
-                  </div>
-                  <span className={`font-bold text-sm ${diffColor}`}>{diffLabel}</span>
+                {/* Player name */}
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-white font-semibold">{player.fullName}</p>
+                  <p className="text-white/50 text-xs">{player.genderFlight} &middot; Par {playerPar}</p>
                 </div>
 
-                {/* Strokes */}
-                <div className="flex items-center justify-center gap-4 mb-3">
+                {/* Score display with golf decorations + to-par */}
+                <div className="flex items-center justify-center gap-3 my-3">
                   <button
                     onClick={() => updateScore(player.id, hole.holeNumber, { strokes: Math.max(1, score.strokes - 1) })}
                     className="w-14 h-14 rounded-xl bg-navy-800 hover:bg-navy-700 text-white text-2xl font-bold transition-colors active:scale-95"
                   >
                     -
                   </button>
-                  <span className="text-5xl font-black text-white w-16 text-center tabular-nums">
-                    {score.strokes}
-                  </span>
+
+                  <div className="flex items-center gap-4">
+                    <ScoreDecoration strokes={score.strokes} par={playerPar}>
+                      {score.strokes}
+                    </ScoreDecoration>
+
+                    {/* To-par — large and prominent */}
+                    <span className={`text-4xl font-black w-16 text-center tabular-nums transition-colors duration-300 ${diffColor}`}>
+                      {diffLabel}
+                    </span>
+                  </div>
+
                   <button
                     onClick={() => updateScore(player.id, hole.holeNumber, { strokes: Math.min(20, score.strokes + 1) })}
                     className="w-14 h-14 rounded-xl bg-navy-800 hover:bg-navy-700 text-white text-2xl font-bold transition-colors active:scale-95"
