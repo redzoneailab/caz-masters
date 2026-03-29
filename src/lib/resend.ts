@@ -9,7 +9,7 @@ function getResend(): Resend {
   return resendInstance;
 }
 
-const FROM_ADDRESS = "The Caz Masters <noreply@yourdomain.com>";
+const FROM_ADDRESS = "The Caz Masters <noreply@cazmasters.com>";
 
 export async function sendMagicLinkEmail(to: string, url: string) {
   await getResend().emails.send({
