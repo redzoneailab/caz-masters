@@ -4,12 +4,18 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import Link from "next/link";
 
+const MESSAGES: Record<string, string> = {
+  register: "Sign in to register for the Caz Masters.",
+};
+
 export default function SignInForm({
   callbackUrl,
   error,
+  message,
 }: {
   callbackUrl?: string;
   error?: string;
+  message?: string;
 }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +40,12 @@ export default function SignInForm({
         <h1 className="text-3xl font-black text-white uppercase text-center mb-8">
           Sign In
         </h1>
+
+        {message && MESSAGES[message] && (
+          <div className="bg-gold-400/10 border border-gold-400/30 rounded-xl p-3 mb-6 text-gold-400 text-sm text-center font-medium">
+            {MESSAGES[message]}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-6 text-red-400 text-sm text-center">

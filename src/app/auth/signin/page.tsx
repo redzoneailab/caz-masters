@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string; message?: string }>;
 }) {
-  const { callbackUrl, error } = await searchParams;
-  return <SignInForm callbackUrl={callbackUrl} error={error} />;
+  const { callbackUrl, error, message } = await searchParams;
+  return <SignInForm callbackUrl={callbackUrl} error={error} message={message} />;
 }

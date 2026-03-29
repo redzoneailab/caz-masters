@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,25 +15,42 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function RegisterPage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect("/auth/signin?callbackUrl=/register&message=register");
+  }
+
   const { freeRegistration, entryFee } = await getTournamentSettings();
 
   // Look up previous registration for signed-in users
   let prefill: { fullName: string; email: string; phone: string; shirtSize: string; genderFlight: string } | null = null;
-  const session = await getServerSession(authOptions);
-  if (session?.userAccountId) {
+  if (session.userAccountId) {
     const prev = await prisma.player.findFirst({
       where: { userAccountId: session.userAccountId },
       orderBy: { createdAt: "desc" },
       select: { fullName: true, email: true, phone: true, shirtSize: true, genderFlight: true },
     });
     if (prev) prefill = prev;
-  } else if (session?.user?.email) {
+  }
+  if (!prefill && session.user?.email) {
     const prev = await prisma.player.findFirst({
       where: { email: session.user.email },
       orderBy: { createdAt: "desc" },
       select: { fullName: true, email: true, phone: true, shirtSize: true, genderFlight: true },
     });
     if (prev) prefill = prev;
+  }
+
+  // New player — pre-populate from their auth account
+  if (!prefill) {
+    prefill = {
+      fullName: session.user?.name || "",
+      email: session.user?.email || "",
+      phone: "",
+      shirtSize: "",
+      genderFlight: "",
+    };
   }
 
   return (
