@@ -108,12 +108,12 @@ export default async function Home() {
       {/* Photo Grid */}
       <section className="bg-navy-950 p-2">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-          {[
+          {([
             { src: "/images/hero.jpg", alt: "Tournament action" },
             { src: "/images/img-1106.jpg", alt: "Good times on the course" },
             { src: "/images/knees-weak.jpg", alt: "Knees weak, arms are heavy" },
             { src: "/images/guys-dudes-3.jpg", alt: "The course" },
-          ].map((img) => (
+          ] as { src: string; alt: string; position?: string }[]).map((img) => (
             <div key={img.src} className="relative aspect-[4/3] overflow-hidden rounded-lg">
               <Image
                 src={img.src}
