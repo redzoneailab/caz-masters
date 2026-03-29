@@ -3,7 +3,7 @@ import AfterPartyForm from "./AfterPartyForm";
 import { TOURNAMENT } from "@/lib/tournament";
 
 export const metadata = {
-  title: "After Party | The Caz Masters",
+  title: "After Party",
   description: "Join us for the Caz Masters After Party - buffet, awards, and a great time.",
 };
 

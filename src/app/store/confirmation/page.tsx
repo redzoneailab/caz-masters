@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Order Confirmed | The Caz Masters",
+  title: "Order Confirmed",
 };
 
 export default async function StoreConfirmationPage({ searchParams }: { searchParams: Promise<{ orderId?: string }> }) {

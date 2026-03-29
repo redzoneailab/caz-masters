@@ -172,8 +172,9 @@ export default function StoreView() {
           )}
 
           {products.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-navy-500 text-lg">Coming soon! Check back for Caz Masters merch.</p>
+            <div className="text-center py-16">
+              <p className="text-navy-900 text-2xl font-bold mb-2">Merch Coming Soon</p>
+              <p className="text-navy-500 text-lg">Check back closer to tournament day.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

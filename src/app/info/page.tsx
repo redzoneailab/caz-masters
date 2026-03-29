@@ -4,7 +4,7 @@ import { TOURNAMENT } from "@/lib/tournament";
 import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
-  title: "Information | The Caz Masters",
+  title: "Information",
   description: "Everything you need to know about The Caz Masters — format, rules, course, prizes, and after party.",
 };
 

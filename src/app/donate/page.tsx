@@ -1,7 +1,7 @@
 import DonationForm from "./DonationForm";
 
 export const metadata = {
-  title: "Caz Cares | The Caz Masters",
+  title: "Caz Cares",
   description: "Supporting our community through The Caz Masters charity golf tournament.",
 };
 

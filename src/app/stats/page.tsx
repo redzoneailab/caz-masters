@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getTeeBoxName, TeeAssignments } from "@/lib/tees";
 
 export const metadata = {
-  title: "All-Time Stats | The Caz Masters",
+  title: "All-Time Stats",
   description: "Records, milestones, and all-time leaderboards from The Caz Masters.",
 };
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { TOURNAMENT } from "@/lib/tournament";
 
 export const metadata = {
-  title: "Registered! | The Caz Masters After Party",
+  title: "Registered! — After Party",
 };
 
 export default function AfterPartyConfirmationPage() {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SignInForm from "./SignInForm";
 
 export const metadata: Metadata = {
-  title: "Sign In | The Caz Masters",
+  title: "Sign In",
 };
 
 export default async function SignInPage({

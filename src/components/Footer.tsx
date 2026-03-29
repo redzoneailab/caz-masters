@@ -29,14 +29,9 @@ export default function Footer() {
         </div>
         <div className="mt-8 pt-8 border-t border-navy-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
           <p>&copy; {new Date().getFullYear()} The Caz Masters</p>
-          <div className="flex items-center gap-4">
-            <p className="text-navy-600 uppercase tracking-[0.2em] font-bold text-xs">
-              Brought to You by The Dog
-            </p>
-            <Link href="/admin" className="text-navy-700 hover:text-navy-500 text-xs transition-colors">
-              Admin
-            </Link>
-          </div>
+          <p className="text-navy-600 uppercase tracking-[0.2em] font-bold text-xs">
+            Brought to You by The Dog
+          </p>
         </div>
       </div>
     </footer>

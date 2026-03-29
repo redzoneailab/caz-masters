@@ -3,7 +3,7 @@ import { TOURNAMENT } from "@/lib/tournament";
 import TeamsBoard from "./TeamsBoard";
 
 export const metadata = {
-  title: "Teams | The Caz Masters",
+  title: "Teams",
   description: "Form your team for the 15th Annual Caz Masters tournament.",
 };
 

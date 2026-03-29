@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Check Your Email | The Caz Masters",
+  title: "Check Your Email",
 };
 
 export default function VerifyRequestPage() {

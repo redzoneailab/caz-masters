@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import PlayerDirectory from "./PlayerDirectory";
 
 export const metadata = {
-  title: "Player Directory | The Caz Masters",
+  title: "Player Directory",
   description: "All-time player directory for The Caz Masters tournament.",
 };
 

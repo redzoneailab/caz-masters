@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const metadata = {
-  title: "Photo Gallery | The Caz Masters",
+  title: "Photo Gallery",
   description: "Photos from all 15 years of The Caz Masters — browse, download, and share.",
 };
 

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import StoreView from "./StoreView";
 
 export const metadata = {
-  title: "Store | The Caz Masters",
+  title: "Store",
   description: "Official Caz Masters merch. All proceeds donated to Caz Cares.",
 };
 

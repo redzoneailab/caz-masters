@@ -16,9 +16,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Caz Masters | 15th Annual Charity Golf Tournament",
+  metadataBase: new URL("https://cazmasters.com"),
+  title: {
+    default: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    template: "%s | The Caz Masters",
+  },
   description:
-    "Join us for the 15th Annual Caz Masters charity golf tournament at Cazenovia Golf Club. Friday, July 3rd, 2026. 72-player field.",
+    "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
+  openGraph: {
+    title: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    description:
+      "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
+    url: "https://cazmasters.com",
+    siteName: "The Caz Masters",
+    images: [
+      {
+        url: "/images/group-2018.jpg",
+        width: 1200,
+        height: 630,
+        alt: "The Caz Masters — Annual Charity Golf Tournament",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    description:
+      "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
+    images: ["/images/group-2018.jpg"],
+  },
 };
 
 export default function RootLayout({

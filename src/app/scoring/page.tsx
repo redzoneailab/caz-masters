@@ -1,7 +1,7 @@
 import ScoringInterface from "./ScoringInterface";
 
 export const metadata = {
-  title: "Score Entry | The Caz Masters",
+  title: "Score Entry",
   description: "Enter live scores for The Caz Masters tournament.",
 };
 

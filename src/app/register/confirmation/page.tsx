@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
-  title: "LET'S FUCKING GO | The Caz Masters",
+  title: "LET'S FUCKING GO",
 };
 
 export const dynamic = "force-dynamic";

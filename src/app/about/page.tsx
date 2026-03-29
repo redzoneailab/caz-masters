@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About | The Caz Masters",
+  title: "About",
   description: "The story of The Caz Masters charity golf tournament — 15 years of golf, beers, and giving back.",
 };
 

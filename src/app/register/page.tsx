@@ -7,7 +7,7 @@ import RegistrationForm from "./RegistrationForm";
 import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
-  title: "Register | The Caz Masters",
+  title: "Register",
   description: "Register for the 15th Annual Caz Masters charity golf tournament.",
 };
 

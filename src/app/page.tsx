@@ -4,11 +4,21 @@ import CountdownTimer from "@/components/CountdownTimer";
 import SpotsCounter from "@/components/SpotsCounter";
 import { TOURNAMENT } from "@/lib/tournament";
 import { getTournamentSettings } from "@/lib/tournament-settings";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { freeRegistration, entryFee } = await getTournamentSettings();
+  const [{ freeRegistration, entryFee }, tournament] = await Promise.all([
+    getTournamentSettings(),
+    prisma.tournament.findUnique({
+      where: { year: TOURNAMENT.year },
+      select: { maxPlayers: true, _count: { select: { players: true } } },
+    }),
+  ]);
+
+  const spotsFilled = tournament?._count.players ?? 0;
+  const spotsTotal = tournament?.maxPlayers ?? TOURNAMENT.maxPlayers;
 
   return (
     <>
@@ -84,7 +94,7 @@ export default async function Home() {
               <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">WHERE</p>
               <p className="text-xl sm:text-2xl font-bold text-navy-900">Caz Golf Club, Cazenovia NY</p>
             </div>
-            <SpotsCounter />
+            <SpotsCounter filled={spotsFilled} total={spotsTotal} />
             {!freeRegistration && (
               <div>
                 <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">COST</p>

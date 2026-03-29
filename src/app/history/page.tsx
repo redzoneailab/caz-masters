@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getTeeBoxName, isMensFlight, TeeAssignments } from "@/lib/tees";
 
 export const metadata = {
-  title: "Hall of Fame | The Caz Masters",
+  title: "Hall of Fame",
   description: "Past champions and award winners of The Caz Masters tournament.",
 };
 
