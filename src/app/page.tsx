@@ -110,7 +110,7 @@ export default async function Home() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {[
             { src: "/images/hero.jpg", alt: "Tournament action" },
-            { src: "/images/broiler.jpg", alt: "The Broiler", position: "center 20%" },
+            { src: "/images/img-1106.jpg", alt: "Good times on the course" },
             { src: "/images/knees-weak.jpg", alt: "Knees weak, arms are heavy" },
             { src: "/images/guys-dudes-3.jpg", alt: "The course" },
           ].map((img) => (
