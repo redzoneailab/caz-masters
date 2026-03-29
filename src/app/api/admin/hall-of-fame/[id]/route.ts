@@ -23,6 +23,7 @@ export async function PATCH(
   if (body.winnerName) data.winnerName = body.winnerName;
   if (body.teamName !== undefined) data.teamName = body.teamName || null;
   if (body.description !== undefined) data.description = body.description || null;
+  if (body.score !== undefined) data.score = body.score != null ? parseInt(body.score) : null;
 
   const entry = await prisma.hallOfFameEntry.update({ where: { id }, data });
   return NextResponse.json({ entry });

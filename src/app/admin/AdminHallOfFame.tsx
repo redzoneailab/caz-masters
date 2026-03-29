@@ -9,6 +9,7 @@ interface HoFEntry {
   winnerName: string;
   teamName: string | null;
   description: string | null;
+  score: number | null;
 }
 
 const CATEGORIES = [
@@ -32,6 +33,7 @@ export default function AdminHallOfFame({ password }: { password: string }) {
   const [winnerName, setWinnerName] = useState("");
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
+  const [score, setScore] = useState("");
   const [saving, setSaving] = useState(false);
 
   const headers = {
@@ -72,6 +74,7 @@ export default function AdminHallOfFame({ password }: { password: string }) {
           winnerName: winnerName.trim(),
           teamName: teamName.trim() || undefined,
           description: description.trim() || undefined,
+          score: score ? parseInt(score) : undefined,
         }),
       });
       if (!res.ok) {
@@ -82,6 +85,7 @@ export default function AdminHallOfFame({ password }: { password: string }) {
       setWinnerName("");
       setTeamName("");
       setDescription("");
+      setScore("");
       await fetchEntries();
     } catch {
       setError("Failed to add entry");
@@ -160,6 +164,19 @@ export default function AdminHallOfFame({ password }: { password: string }) {
           </div>
           <div className="flex gap-3">
             <input
+              type="number"
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+              placeholder={
+                category === "team"
+                  ? "Stableford pts"
+                  : category === "mens_individual" || category === "womens_individual"
+                  ? "Total strokes"
+                  : "Score (optional)"
+              }
+              className="w-36 border border-navy-200 rounded-lg px-3 py-2 text-sm"
+            />
+            <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -196,6 +213,13 @@ export default function AdminHallOfFame({ password }: { password: string }) {
                     <p className="text-sm text-navy-800 font-medium">
                       {entry.winnerName}
                       {entry.teamName && <span className="text-navy-500"> - {entry.teamName}</span>}
+                      {entry.score != null && (
+                        <span className="text-navy-500 ml-1">
+                          ({entry.category === "team"
+                            ? `${entry.score} Stableford pts`
+                            : `${entry.score} strokes`})
+                        </span>
+                      )}
                     </p>
                     {entry.description && (
                       <p className="text-xs text-navy-400">{entry.description}</p>

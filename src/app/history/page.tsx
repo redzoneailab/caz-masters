@@ -47,7 +47,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 interface YearResult {
   year: number;
   edition: number;
-  entries: { category: string; winnerName: string; teamName?: string; description?: string }[];
+  entries: { category: string; winnerName: string; teamName?: string; description?: string; score?: number }[];
   fromScores: boolean;
 }
 
@@ -245,6 +245,7 @@ export default async function HistoryPage() {
       winnerName: e.winnerName,
       teamName: e.teamName || undefined,
       description: e.description || undefined,
+      score: e.score ?? undefined,
     })),
     fromScores: false,
   }));
@@ -375,7 +376,16 @@ export default async function HistoryPage() {
                                   </p>
                                   {catEntries.map((entry, i) => (
                                     <div key={i}>
-                                      <p className="text-navy-900 font-bold text-lg leading-tight">{entry.winnerName}</p>
+                                      <p className="text-navy-900 font-bold text-lg leading-tight">
+                                        {entry.winnerName}
+                                        {entry.score != null && (
+                                          <span className="text-navy-400 font-medium text-base ml-2">
+                                            {cat === "team"
+                                              ? `${entry.score} pts`
+                                              : entry.score}
+                                          </span>
+                                        )}
+                                      </p>
                                       {entry.teamName && (
                                         <p className="text-navy-500 text-sm">{entry.teamName}</p>
                                       )}

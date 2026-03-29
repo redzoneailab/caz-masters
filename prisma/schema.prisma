@@ -113,6 +113,7 @@ model HallOfFameEntry {
   winnerName  String
   teamName    String?
   description String?
+  score       Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
