@@ -35,7 +35,7 @@ const CHAMPION_PHOTOS: Record<number, { src: string; label: string }[]> = {
   2016: [{ src: "/images/champion-2016.png", label: "2016 Champion" }],
   2017: [{ src: "/images/champion-2017.png", label: "2017 Champion" }],
   2018: [{ src: "/images/team-winner-2018.jpg", label: "2018 Team Champs" }],
-  2024: [{ src: "/images/2024 winners.jpg", label: "2024 Winners" }],
+  2024: [{ src: "/images/2024-winners.jpg", label: "2024 Winners" }],
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
