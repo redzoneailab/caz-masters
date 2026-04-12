@@ -45,9 +45,7 @@ export default function RegistrationForm({ prefill }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  const afterPartyTotal = afterPartyGuests * TOURNAMENT.afterPartyPrice;
   const tournamentTotal = entryFee;
-  const grandTotal = tournamentTotal + (addAfterParty ? afterPartyTotal : 0);
 
   async function handleSubmit(paymentMethod: "stripe" | "day_of" | "free") {
     setError("");
@@ -76,7 +74,8 @@ export default function RegistrationForm({ prefill }: Props) {
       } else if (paymentMethod === "stripe" && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        window.location.href = "/register/confirmation?status=day_of";
+        const waitlistParam = data.waitlisted ? "&waitlisted=true" : "";
+        window.location.href = `/register/confirmation?status=day_of${waitlistParam}`;
       }
     } catch {
       setError("Network error. Try again.");
@@ -189,7 +188,7 @@ export default function RegistrationForm({ prefill }: Props) {
               {TOURNAMENT.afterPartyIncludes.join(", ")}
             </p>
             <p className="text-gold-600 font-bold text-sm mt-1">
-              ${TOURNAMENT.afterPartyPrice}/person &middot; Kids are free
+              Kids are free
             </p>
           </div>
         </div>
@@ -216,9 +215,6 @@ export default function RegistrationForm({ prefill }: Props) {
                 >
                   +
                 </button>
-                <span className="text-sm text-navy-500">
-                  = ${afterPartyTotal}
-                </span>
               </div>
             </div>
             <div>
@@ -264,30 +260,12 @@ export default function RegistrationForm({ prefill }: Props) {
           </>
         ) : (
           <>
-            {/* Price summary */}
-            {addAfterParty && (
-              <div className="bg-navy-50 rounded-xl p-4 space-y-2 text-sm">
-                <div className="flex justify-between text-navy-600">
-                  <span>Tournament entry</span>
-                  <span>${tournamentTotal}</span>
-                </div>
-                <div className="flex justify-between text-navy-600">
-                  <span>After Party ({afterPartyGuests} guest{afterPartyGuests > 1 ? "s" : ""})</span>
-                  <span>${afterPartyTotal}</span>
-                </div>
-                <div className="flex justify-between font-bold text-navy-900 border-t border-navy-200 pt-2">
-                  <span>Total</span>
-                  <span>${grandTotal}</span>
-                </div>
-              </div>
-            )}
-
             <button
               onClick={() => handleSubmit("stripe")}
               disabled={loading || !isValid}
               className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
             >
-              {loading ? "Hold tight..." : `Pay $${grandTotal} Now`}
+              {loading ? "Hold tight..." : `Pay $${tournamentTotal} Now`}
             </button>
 
             <button

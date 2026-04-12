@@ -5,7 +5,7 @@ export const TOURNAMENT = {
   date: new Date("2026-07-03T08:00:00-04:00"),
   dateDisplay: "Friday, July 3rd, 2026",
   location: "Cazenovia Golf Club",
-  maxPlayers: 72,
+  maxPlayers: 60,
   entryFee: 150, // dollars
   entryFeeCents: 15000,
   shotgunBeerPrice: 5, // dollars per beer

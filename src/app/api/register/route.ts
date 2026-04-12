@@ -45,14 +45,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Registration is currently closed." }, { status: 400 });
     }
 
-    // Check capacity
+    // Check capacity (only count non-waitlisted players)
     const playerCount = await prisma.player.count({
-      where: { tournamentId: tournament.id },
+      where: { tournamentId: tournament.id, waitlisted: false },
     });
 
-    if (playerCount >= tournament.maxPlayers) {
-      return NextResponse.json({ error: "Tournament is full." }, { status: 400 });
-    }
+    const isWaitlisted = playerCount >= tournament.maxPlayers;
 
     // Check for duplicate registration
     const existing = await prisma.player.findUnique({
@@ -88,6 +86,7 @@ export async function POST(req: NextRequest) {
         returningPlayer: !!previousReg,
         dietaryNeeds: null,
         tournamentId: tournament.id,
+        waitlisted: isWaitlisted,
         ...(existingAccount && { userAccountId: existingAccount.id }),
       },
     });
@@ -105,7 +104,7 @@ export async function POST(req: NextRequest) {
             email,
             numGuests,
             numKids,
-            totalAmount: numGuests * TOURNAMENT.afterPartyPriceCents,
+            totalAmount: 0, // Price TBD — will be updated when finalized
             paymentMethod: paymentMethod === "stripe" ? "stripe" : "at_door",
             paymentStatus: "unpaid",
             playerId: player.id,
@@ -131,7 +130,7 @@ export async function POST(req: NextRequest) {
         // Don't fail registration if email fails
       }
 
-      return NextResponse.json({ success: true, redirect: "/register/confirmation?status=free" });
+      return NextResponse.json({ success: true, redirect: `/register/confirmation?status=free${isWaitlisted ? "&waitlisted=true" : ""}` });
     }
 
     if (paymentMethod === "stripe") {
@@ -153,26 +152,14 @@ export async function POST(req: NextRequest) {
         },
       ];
 
-      // Add after party line item if applicable
-      if (afterPartyReg) {
-        lineItems.push({
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `After Party (${afterPartyReg.numGuests} guest${afterPartyReg.numGuests > 1 ? "s" : ""})`,
-            },
-            unit_amount: TOURNAMENT.afterPartyPriceCents,
-          },
-          quantity: afterPartyReg.numGuests,
-        });
-      }
+      // After party price TBD — no Stripe line item for now
 
       // Create Stripe checkout session
       const session = await getStripe().checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: lineItems,
         mode: "payment",
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/register/confirmation?status=paid`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/register/confirmation?status=paid${isWaitlisted ? "&waitlisted=true" : ""}`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/register?cancelled=true`,
         customer_email: email,
         metadata: {
@@ -219,7 +206,7 @@ export async function POST(req: NextRequest) {
         // Don't fail registration if email fails
       }
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, waitlisted: isWaitlisted });
     }
   } catch (error) {
     console.error("Registration error:", error);

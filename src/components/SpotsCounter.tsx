@@ -13,7 +13,7 @@ export default function SpotsCounter({ filled, total }: SpotsCounterProps) {
       <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">SPOTS</p>
       <p className={`text-xl sm:text-2xl font-bold ${full ? "text-red-600" : urgency ? "text-red-500" : "text-navy-900"}`}>
         {full
-          ? "Full. Damn."
+          ? `${total} / ${total} — Waitlist Open`
           : urgency
           ? `${filled} / ${total} — Only ${remaining} Left`
           : `${filled} / ${total} Filled`}

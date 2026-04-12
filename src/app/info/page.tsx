@@ -185,7 +185,7 @@ export default async function InfoPage() {
                   <span className="w-2 h-2 rounded-full bg-gold-400 mt-2 shrink-0" />
                   <div>
                     <p className="font-semibold text-white">Price</p>
-                    <p className="text-navy-300">${TOURNAMENT.afterPartyPrice} per person</p>
+                    <p className="text-navy-300">TBD</p>
                   </div>
                 </div>
               </div>

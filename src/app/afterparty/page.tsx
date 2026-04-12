@@ -69,7 +69,7 @@ export default function AfterPartyPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-navy-900">Price</p>
-                    <p className="text-navy-600">${TOURNAMENT.afterPartyPrice} per person</p>
+                    <p className="text-navy-600">TBD</p>
                   </div>
                 </div>
               </div>

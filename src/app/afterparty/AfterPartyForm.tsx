@@ -40,8 +40,6 @@ export default function AfterPartyForm() {
     }
   }
 
-  const total = numGuests * TOURNAMENT.afterPartyPrice;
-
   async function handleSubmit(paymentMethod: "stripe" | "at_door") {
     setSubmitting(true);
     setError("");
@@ -82,7 +80,6 @@ export default function AfterPartyForm() {
         <h3 className="text-xl font-bold text-navy-900 mb-2">You&apos;re Registered!</h3>
         <p className="text-navy-600">
           See you at {TOURNAMENT.afterPartyVenue} on {TOURNAMENT.afterPartyDate} at {TOURNAMENT.afterPartyTime}.
-          Payment of ${total} will be collected at the door.
         </p>
       </div>
     );
@@ -146,14 +143,6 @@ export default function AfterPartyForm() {
           </div>
         </div>
 
-        <div className="bg-navy-50 rounded-lg p-4 text-center">
-          <p className="text-sm text-navy-500">Total</p>
-          <p className="text-3xl font-bold text-navy-900">${total}</p>
-          <p className="text-xs text-navy-400 mt-1">
-            ${TOURNAMENT.afterPartyPrice} &times; {numGuests} guest{numGuests > 1 ? "s" : ""}
-          </p>
-        </div>
-
         {error && (
           <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 text-sm">
             {error}
@@ -162,19 +151,15 @@ export default function AfterPartyForm() {
 
         <div className="space-y-3 pt-2">
           <button
-            onClick={() => handleSubmit("stripe")}
+            onClick={() => handleSubmit("at_door")}
             disabled={submitting || !name || !email}
             className="w-full bg-gold-400 hover:bg-gold-300 text-navy-950 font-black py-3 rounded-lg transition-colors uppercase tracking-wider disabled:opacity-50"
           >
-            {submitting ? "Processing..." : `Pay $${total} Now`}
+            {submitting ? "Processing..." : "Reserve Your Spot"}
           </button>
-          <button
-            onClick={() => handleSubmit("at_door")}
-            disabled={submitting || !name || !email}
-            className="w-full bg-navy-800 hover:bg-navy-900 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {submitting ? "Processing..." : "Pay at the Door"}
-          </button>
+          <p className="text-center text-xs text-navy-400">
+            Price TBD. Payment will be collected later.
+          </p>
         </div>
       </div>
     </div>

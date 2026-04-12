@@ -13,11 +13,15 @@ export default async function Home() {
     getTournamentSettings(),
     prisma.tournament.findUnique({
       where: { year: TOURNAMENT.year },
-      select: { maxPlayers: true, _count: { select: { players: true } } },
+      select: { maxPlayers: true, id: true },
     }),
   ]);
 
-  const spotsFilled = tournament?._count.players ?? 0;
+  const spotsFilled = tournament
+    ? await prisma.player.count({
+        where: { tournamentId: tournament.id, waitlisted: false },
+      })
+    : 0;
   const spotsTotal = tournament?.maxPlayers ?? TOURNAMENT.maxPlayers;
 
   return (

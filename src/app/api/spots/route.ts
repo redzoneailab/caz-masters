@@ -8,11 +8,15 @@ export async function GET() {
   try {
     const tournament = await prisma.tournament.findUnique({
       where: { year: TOURNAMENT.year },
-      select: { maxPlayers: true, _count: { select: { players: true } } },
+      select: { id: true, maxPlayers: true },
     });
 
-    const filled = tournament?._count.players ?? 0;
     const total = tournament?.maxPlayers ?? TOURNAMENT.maxPlayers;
+    const filled = tournament
+      ? await prisma.player.count({
+          where: { tournamentId: tournament.id, waitlisted: false },
+        })
+      : 0;
 
     return NextResponse.json({ filled, total, remaining: total - filled });
   } catch {

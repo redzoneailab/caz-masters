@@ -12,12 +12,13 @@ export const dynamic = "force-dynamic";
 export default async function ConfirmationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; waitlisted?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, waitlisted } = await searchParams;
   const { freeRegistration, entryFee } = await getTournamentSettings();
   const isPaid = status === "paid";
   const isFree = status === "free" || freeRegistration;
+  const isWaitlisted = waitlisted === "true";
 
   return (
     <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
@@ -31,30 +32,50 @@ export default async function ConfirmationPage({
         <div className="absolute inset-0 bg-navy-950/70" />
       </div>
       <div className="relative max-w-lg mx-auto px-4 sm:px-6 text-center py-20">
-        <h1 className="text-5xl sm:text-7xl font-black text-white uppercase mb-6 leading-none">
-          Let&apos;s
-          <br />
-          <span className="text-gold-400">Fucking</span>
-          <br />
-          Go
-        </h1>
-        <p className="text-white/90 text-xl mb-2">
-          You&apos;re in. Welcome to the 15th Annual Caz Masters.
-        </p>
-        {isPaid ? (
-          <p className="text-gold-400 font-bold text-lg mb-8">
-            Paid up and ready to rip.
-          </p>
-        ) : isFree ? (
-          <p className="text-gold-400 font-bold text-lg mb-8">
-            You&apos;re registered. We&apos;ll handle payment details later.
-          </p>
-        ) : (
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 mb-8">
-            <p className="text-white font-bold">
-              Bring ${entryFee} to check-in. Cash or card.
+        {isWaitlisted ? (
+          <>
+            <h1 className="text-5xl sm:text-7xl font-black text-white uppercase mb-6 leading-none">
+              You&apos;re
+              <br />
+              <span className="text-gold-400">On The</span>
+              <br />
+              List
+            </h1>
+            <p className="text-white/90 text-xl mb-2">
+              The field is full, but you&apos;re on the waitlist.
             </p>
-          </div>
+            <p className="text-gold-400 font-bold text-lg mb-8">
+              We&apos;ll reach out if a spot opens up.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-5xl sm:text-7xl font-black text-white uppercase mb-6 leading-none">
+              Let&apos;s
+              <br />
+              <span className="text-gold-400">Fucking</span>
+              <br />
+              Go
+            </h1>
+            <p className="text-white/90 text-xl mb-2">
+              You&apos;re in. Welcome to the 15th Annual Caz Masters.
+            </p>
+            {isPaid ? (
+              <p className="text-gold-400 font-bold text-lg mb-8">
+                Paid up and ready to rip.
+              </p>
+            ) : isFree ? (
+              <p className="text-gold-400 font-bold text-lg mb-8">
+                You&apos;re registered. We&apos;ll handle payment details later.
+              </p>
+            ) : (
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 mb-8">
+                <p className="text-white font-bold">
+                  Bring ${entryFee} to check-in. Cash or card.
+                </p>
+              </div>
+            )}
+          </>
         )}
         <p className="text-white/60 text-sm mb-10">
           Confirmation email incoming. Check spam if you don&apos;t see it.

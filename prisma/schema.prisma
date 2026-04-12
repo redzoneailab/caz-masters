@@ -13,7 +13,7 @@ model Tournament {
   year               Int         @unique
   date               DateTime
   location           String
-  maxPlayers         Int         @default(72)
+  maxPlayers         Int         @default(60)
   registrationOpen   Boolean     @default(true)
   teamsLocked        Boolean     @default(false)
   entryFee           Int         @default(15000)
@@ -41,6 +41,7 @@ model Player {
   genderFlight    String
   teamPreference  String?
   returningPlayer Boolean      @default(false)
+  waitlisted      Boolean      @default(false)
   dietaryNeeds    String?
   tournamentId    String
   tournament      Tournament   @relation(fields: [tournamentId], references: [id])
