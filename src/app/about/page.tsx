@@ -70,33 +70,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Caz Cares */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-black text-navy-900 uppercase mb-6">
-              Caz Cares
-            </h2>
-            <p className="text-navy-600 text-lg leading-relaxed mb-4">
-              More than a tournament. Every entry fee, every donation, every merch purchase
-              goes directly toward supporting local causes in the Cazenovia community. Youth
-              sports, families in need, and community programs that make this town what it is.
-            </p>
-            <p className="text-navy-600 text-lg leading-relaxed">
-              Over 14 years, we&apos;ve raised thousands for the people and places that matter
-              most. The Caz Masters proves you can have a hell of a time and do some real good
-              while you&apos;re at it.
-            </p>
-            <Link
-              href="/donate"
-              className="inline-block mt-8 bg-gold-400 hover:bg-gold-300 text-navy-950 font-black px-8 py-3 rounded-xl transition-colors uppercase tracking-wider"
-            >
-              Support Caz Cares
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Photo Gallery Preview */}
       <section className="py-16 sm:py-24 bg-navy-900 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">

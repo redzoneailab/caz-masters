@@ -85,7 +85,6 @@ export default function Navbar() {
             <Link href="/" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Home</Link>
             <NavDropdown label="Tournament" items={tournamentItems} />
             <Link href="/store" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Store</Link>
-            <Link href="/donate" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Donate</Link>
             <NavDropdown label="Record Book" items={recordBookItems} />
             <Link href="/about" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">About</Link>
             {session ? (
@@ -166,7 +165,6 @@ export default function Navbar() {
             )}
 
             <Link href="/store" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Store</Link>
-            <Link href="/donate" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Donate</Link>
 
             {/* Record Book group */}
             <button

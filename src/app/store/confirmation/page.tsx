@@ -34,7 +34,7 @@ export default async function StoreConfirmationPage({ searchParams }: { searchPa
           </div>
           <h1 className="text-3xl font-black uppercase tracking-tight">Order Confirmed!</h1>
           <p className="mt-3 text-navy-300">
-            Thanks for supporting Caz Cares. Your merch is on the way.
+            Your merch is on the way.
           </p>
         </div>
       </section>

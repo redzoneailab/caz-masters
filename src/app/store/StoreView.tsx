@@ -401,9 +401,6 @@ export default function StoreView() {
                       {checkingOut ? "Processing..." : `Checkout - $${(cartTotal / 100).toFixed(2)}`}
                     </button>
 
-                    <p className="text-center text-xs text-navy-400 pt-1">
-                      All proceeds donated to Caz Cares
-                    </p>
                   </form>
                 </>
               )}

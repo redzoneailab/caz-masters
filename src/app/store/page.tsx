@@ -3,7 +3,7 @@ import StoreView from "./StoreView";
 
 export const metadata = {
   title: "Store",
-  description: "Official Caz Masters merch. All proceeds donated to Caz Cares.",
+  description: "Official Caz Masters merch.",
 };
 
 export default function StorePage() {
@@ -15,11 +15,6 @@ export default function StorePage() {
           <p className="mt-3 text-navy-300 max-w-2xl mx-auto">
             Rep the tournament. Support the cause.
           </p>
-          <div className="mt-4 inline-block bg-gold-400/10 border border-gold-400/30 rounded-lg px-5 py-2">
-            <p className="text-gold-400 font-bold text-sm uppercase tracking-wider">
-              100% of proceeds donated to Caz Cares
-            </p>
-          </div>
         </div>
       </section>
 

@@ -116,9 +116,8 @@ export default async function InfoPage() {
                 <span>&#127866;</span> Shotgun Mulligans
               </h3>
               <p className="text-navy-600 leading-relaxed">
-                For a ${TOURNAMENT.shotgunBeerPrice} donation to Caz Cares, shotgun a beer and retake
+                For ${TOURNAMENT.shotgunBeerPrice}, shotgun a beer and retake
                 your shot. Any shot, any hole &mdash; excluding putts.
-                All proceeds go to charity.
               </p>
             </div>
 
@@ -219,8 +218,8 @@ export default async function InfoPage() {
           <h2 className="text-3xl font-black text-navy-900 uppercase mb-4">Ready?</h2>
           <p className="text-navy-600 mb-8">
             {freeRegistration
-              ? "72 spots. All proceeds go to Caz Cares."
-              : `72 spots. $${entryFee} entry. All proceeds go to Caz Cares.`}
+              ? "72 spots. Lock yours in."
+              : `72 spots. $${entryFee} entry. Lock yours in.`}
           </p>
           <Link
             href="/register"

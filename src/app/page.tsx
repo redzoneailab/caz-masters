@@ -144,8 +144,8 @@ export default async function Home() {
             <div className="flex items-start gap-5">
               <span className="bg-gold-400 text-navy-900 font-black text-3xl w-14 h-14 rounded-xl flex items-center justify-center shrink-0">2</span>
               <div>
-                <p className="text-navy-900 font-bold text-lg">Tournament Entry + Charity Donation</p>
-                <p className="text-navy-500">Prizes, contests, and a donation to Caz Cares. Feel good about yourself for once.</p>
+                <p className="text-navy-900 font-bold text-lg">Tournament Entry</p>
+                <p className="text-navy-500">Prizes, contests, and bragging rights. Feel good about yourself for once.</p>
               </div>
             </div>
             <div className="flex items-start gap-5">
