@@ -22,15 +22,14 @@ const CATEGORIES = [
   { value: "fan_vote", label: "Fan Vote" },
 ];
 
-// Years 2012-2025 for the 14 prior years
-const YEARS = Array.from({ length: 14 }, (_, i) => 2025 - i);
+const YEARS = Array.from({ length: 15 }, (_, i) => 2026 - i);
 
 export default function AdminHallOfFame({ password }: { password: string }) {
   const [entries, setEntries] = useState<HoFEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Form state
+  // Add form
   const [year, setYear] = useState(2025);
   const [category, setCategory] = useState("mens_individual");
   const [winnerName, setWinnerName] = useState("");
@@ -38,6 +37,10 @@ export default function AdminHallOfFame({ password }: { password: string }) {
   const [description, setDescription] = useState("");
   const [score, setScore] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Edit modal
+  const [editing, setEditing] = useState<HoFEntry | null>(null);
+  const [editForm, setEditForm] = useState({ year: 2025, category: "", winnerName: "", teamName: "", description: "", score: "" });
 
   const headers = {
     "Content-Type": "application/json",
@@ -97,6 +100,49 @@ export default function AdminHallOfFame({ password }: { password: string }) {
     }
   }
 
+  function openEdit(entry: HoFEntry) {
+    setEditing(entry);
+    setEditForm({
+      year: entry.year,
+      category: entry.category,
+      winnerName: entry.winnerName,
+      teamName: entry.teamName || "",
+      description: entry.description || "",
+      score: entry.score != null ? String(entry.score) : "",
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/hall-of-fame/${editing.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          year: editForm.year,
+          category: editForm.category,
+          winnerName: editForm.winnerName,
+          teamName: editForm.teamName || null,
+          description: editForm.description || null,
+          score: editForm.score ? parseInt(editForm.score) : null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Failed to save");
+        return;
+      }
+      setEditing(null);
+      await fetchEntries();
+    } catch {
+      setError("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function deleteEntry(id: string) {
     if (!confirm("Delete this entry?")) return;
     try {
@@ -118,11 +164,14 @@ export default function AdminHallOfFame({ password }: { password: string }) {
     return acc;
   }, {});
 
+  const inputClass = "w-full border border-navy-200 rounded-lg px-3 py-2 text-sm";
+
   return (
     <div className="space-y-6">
       {error && (
         <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 text-sm">
           {error}
+          <button onClick={() => setError("")} className="ml-2 font-bold">&times;</button>
         </div>
       )}
 
@@ -209,7 +258,7 @@ export default function AdminHallOfFame({ password }: { password: string }) {
             <div className="divide-y divide-navy-50">
               {byYear[yr].map((entry) => (
                 <div key={entry.id} className="flex items-center justify-between px-5 py-3">
-                  <div>
+                  <button onClick={() => openEdit(entry)} className="text-left flex-1 hover:bg-navy-50/50 -mx-2 px-2 py-1 rounded-lg transition-colors">
                     <span className="text-xs font-bold text-gold-500 uppercase">
                       {CATEGORIES.find((c) => c.value === entry.category)?.label || entry.category}
                     </span>
@@ -229,13 +278,21 @@ export default function AdminHallOfFame({ password }: { password: string }) {
                     {entry.description && (
                       <p className="text-xs text-navy-400">{entry.description}</p>
                     )}
-                  </div>
-                  <button
-                    onClick={() => deleteEntry(entry.id)}
-                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
-                  >
-                    Delete
                   </button>
+                  <div className="flex gap-1 shrink-0 ml-2">
+                    <button
+                      onClick={() => openEdit(entry)}
+                      className="text-xs bg-navy-50 text-navy-600 hover:bg-navy-100 px-3 py-1.5 rounded-lg"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteEntry(entry.id)}
+                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -246,6 +303,55 @@ export default function AdminHallOfFame({ password }: { password: string }) {
         <p className="text-navy-400 text-sm text-center py-8">
           No Hall of Fame entries yet. Use the form above to add past winners.
         </p>
+      )}
+
+      {/* Edit modal */}
+      {editing && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-navy-900 text-lg">Edit Hall of Fame Entry</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-navy-600 uppercase">Year</label>
+                  <select className={inputClass} value={editForm.year} onChange={(e) => setEditForm({ ...editForm, year: parseInt(e.target.value) })}>
+                    {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-navy-600 uppercase">Category</label>
+                  <select className={inputClass} value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}>
+                    {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy-600 uppercase">Winner Name</label>
+                <input className={inputClass} value={editForm.winnerName} onChange={(e) => setEditForm({ ...editForm, winnerName: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy-600 uppercase">Team Name</label>
+                <input className={inputClass} value={editForm.teamName} onChange={(e) => setEditForm({ ...editForm, teamName: e.target.value })} placeholder="Optional" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy-600 uppercase">Score</label>
+                <input type="number" className={inputClass} value={editForm.score} onChange={(e) => setEditForm({ ...editForm, score: e.target.value })} placeholder="Optional" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-navy-600 uppercase">Description</label>
+                <input className={inputClass} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Optional" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={saveEdit} disabled={saving} className="flex-1 bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold py-2.5 rounded-lg text-sm disabled:opacity-50">
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button onClick={() => setEditing(null)} className="flex-1 bg-white border border-navy-200 text-navy-600 py-2.5 rounded-lg text-sm hover:bg-navy-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
