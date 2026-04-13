@@ -287,11 +287,11 @@ export default async function HistoryPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold-400/30 shadow-2xl">
-              <Image
-                src="/images/new-champ.jpg"
-                alt="Reigning Champion"
-                fill
-                className="object-cover"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://image.pollinations.ai/prompt/A%20gold%20blazer%20jacket%20hanging%20on%20a%20wooden%20hanger%20in%20a%20classic%20golf%20club%20locker%20room%20with%20dark%20wood%20lockers%2C%20dramatic%20lighting%2C%20photorealistic?width=800&height=600&nologo=true&seed=42"
+                alt="The Gold Jacket"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
             <div>
@@ -299,12 +299,12 @@ export default async function HistoryPage() {
                 Reigning Champion
               </p>
               <h2 className="text-3xl sm:text-4xl font-black uppercase mb-4">
-                The Green Jacket Holder
+                The Gold Jacket Holder
               </h2>
               <p className="text-navy-300 text-lg leading-relaxed">
                 Every year, one player rises above the rest and earns the right to wear the
-                green jacket. Their name goes up on the wall. Their legend lives forever.
-                Or at least until next July 3rd.
+                gold jacket. Their name goes up on the wall. Their legend lives forever.
+                Or at least until next July.
               </p>
             </div>
           </div>
