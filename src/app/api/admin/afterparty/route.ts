@@ -28,3 +28,31 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ registrations, stats });
 }
+
+export async function POST(req: NextRequest) {
+  if (!checkAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { name, email, numGuests } = await req.json();
+
+  if (!name || !email) {
+    return NextResponse.json({ error: "Name and email required" }, { status: 400 });
+  }
+
+  const existing = await prisma.afterPartyRegistration.findUnique({ where: { email } });
+  if (existing) {
+    return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+  }
+
+  const registration = await prisma.afterPartyRegistration.create({
+    data: {
+      name,
+      email,
+      numGuests: numGuests || 1,
+      totalAmount: 0,
+      paymentMethod: "at_door",
+      paymentStatus: "unpaid",
+    },
+  });
+
+  return NextResponse.json({ registration }, { status: 201 });
+}

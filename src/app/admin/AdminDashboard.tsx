@@ -10,27 +10,7 @@ import AdminScoring from "./AdminScoring";
 import AdminStore from "./AdminStore";
 import AdminAfterParty from "./AdminAfterParty";
 import AdminPolls from "./AdminPolls";
-
-interface Payment {
-  id: string;
-  amount: number;
-  status: string;
-  method: string | null;
-}
-
-interface Player {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  shirtSize: string;
-  genderFlight: string;
-  teamPreference: string | null;
-  returningPlayer: boolean;
-  dietaryNeeds: string | null;
-  payment: Payment | null;
-  createdAt: string;
-}
+import AdminPlayers from "./AdminPlayers";
 
 interface Tournament {
   id: string;
@@ -58,7 +38,6 @@ const TABS = [
 export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -76,7 +55,6 @@ export default function AdminDashboard() {
         return;
       }
       const data = await res.json();
-      setPlayers(data.players);
       setTournament(data.tournament);
       setError("");
     } catch {
@@ -93,130 +71,6 @@ export default function AdminDashboard() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setAuthed(true);
-  }
-
-  async function toggleRegistration() {
-    if (!tournament) return;
-    try {
-      await fetch("/api/admin/tournament", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`,
-        },
-        body: JSON.stringify({ registrationOpen: !tournament.registrationOpen }),
-      });
-      setTournament({ ...tournament, registrationOpen: !tournament.registrationOpen });
-    } catch {
-      setError("Failed to update tournament");
-    }
-  }
-
-  async function toggleFreeRegistration() {
-    if (!tournament) return;
-    try {
-      await fetch("/api/admin/tournament", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`,
-        },
-        body: JSON.stringify({ freeRegistration: !tournament.freeRegistration }),
-      });
-      setTournament({ ...tournament, freeRegistration: !tournament.freeRegistration });
-    } catch {
-      setError("Failed to update tournament");
-    }
-  }
-
-  async function updateEntryFee(feeDollars: number) {
-    if (!tournament) return;
-    const feeCents = Math.round(feeDollars * 100);
-    try {
-      await fetch("/api/admin/tournament", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`,
-        },
-        body: JSON.stringify({ entryFee: feeCents }),
-      });
-      setTournament({ ...tournament, entryFee: feeCents });
-    } catch {
-      setError("Failed to update entry fee");
-    }
-  }
-
-  async function updatePaymentStatus(playerId: string, paymentStatus: string) {
-    try {
-      await fetch(`/api/admin/players/${playerId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`,
-        },
-        body: JSON.stringify({ paymentStatus }),
-      });
-      await fetchData();
-    } catch {
-      setError("Failed to update payment");
-    }
-  }
-
-  function exportCSV() {
-    const headers = [
-      "Name",
-      "Email",
-      "Phone",
-      "Shirt Size",
-      "Flight",
-      "Team Preference",
-      "Returning",
-      "Dietary Needs",
-      "Payment Status",
-      "Payment Method",
-      "Registered",
-    ];
-    const rows = players.map((p) => [
-      p.fullName,
-      p.email,
-      p.phone,
-      p.shirtSize,
-      p.genderFlight,
-      p.teamPreference || "",
-      p.returningPlayer ? "Yes" : "No",
-      p.dietaryNeeds || "",
-      p.payment?.status || "unknown",
-      p.payment?.method || "",
-      new Date(p.createdAt).toLocaleDateString(),
-    ]);
-
-    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `caz-masters-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function statusBadge(status: string) {
-    const colors: Record<string, string> = {
-      paid_online: "bg-navy-100 text-navy-700",
-      paid_manual: "bg-blue-100 text-blue-800",
-      unpaid: "bg-red-100 text-red-800",
-    };
-    const labels: Record<string, string> = {
-      paid_online: "Paid Online",
-      paid_manual: "Paid Manual",
-      unpaid: "Unpaid",
-    };
-    return (
-      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${colors[status] || "bg-gray-100 text-gray-800"}`}>
-        {labels[status] || status}
-      </span>
-    );
   }
 
   if (!authed) {
@@ -244,9 +98,6 @@ export default function AdminDashboard() {
       </section>
     );
   }
-
-  const paidCount = players.filter((p) => p.payment?.status === "paid_online" || p.payment?.status === "paid_manual").length;
-  const unpaidCount = players.filter((p) => p.payment?.status === "unpaid").length;
 
   return (
     <section className="py-8 bg-gray-50 min-h-screen">
@@ -282,155 +133,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Players Tab */}
-        {activeTab === "players" && (
-          <>
-            <div className="flex flex-wrap gap-2 mb-6">
-              <button
-                onClick={fetchData}
-                disabled={loading}
-                className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-              >
-                {loading ? "Loading..." : "Refresh"}
-              </button>
-              <button
-                onClick={exportCSV}
-                className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-              >
-                Export CSV
-              </button>
-              <button
-                onClick={toggleRegistration}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  tournament?.registrationOpen
-                    ? "bg-red-100 text-red-700 hover:bg-red-200"
-                    : "bg-navy-100 text-navy-600 hover:bg-navy-200"
-                }`}
-              >
-                {tournament?.registrationOpen ? "Close Registration" : "Open Registration"}
-              </button>
-              <button
-                onClick={toggleFreeRegistration}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  tournament?.freeRegistration
-                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                    : "bg-navy-100 text-navy-600 hover:bg-navy-200"
-                }`}
-              >
-                {tournament?.freeRegistration ? "Free Reg: ON" : "Free Reg: OFF"}
-              </button>
-              {!tournament?.freeRegistration && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm text-navy-500">Fee: $</span>
-                  <input
-                    type="number"
-                    defaultValue={tournament ? tournament.entryFee / 100 : 150}
-                    min={0}
-                    className="w-20 border border-navy-200 rounded-lg px-2 py-1.5 text-sm"
-                    onBlur={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (!isNaN(val) && val > 0) updateEntryFee(val);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-xl p-4 border border-navy-100">
-                <p className="text-sm text-navy-500">Total Registered</p>
-                <p className="text-3xl font-bold text-navy-900">{players.length}</p>
-                <p className="text-xs text-navy-400">of {tournament?.maxPlayers || 72}</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-navy-100">
-                <p className="text-sm text-navy-500">Paid</p>
-                <p className="text-3xl font-bold text-navy-900">{paidCount}</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-navy-100">
-                <p className="text-sm text-red-600">Unpaid</p>
-                <p className="text-3xl font-bold text-red-700">{unpaidCount}</p>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-navy-100">
-                <p className="text-sm text-navy-500">Registration</p>
-                <p className="text-xl font-bold mt-1">
-                  {tournament?.registrationOpen ? (
-                    <span className="text-navy-600">Open</span>
-                  ) : (
-                    <span className="text-red-700">Closed</span>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Player table */}
-            <div className="bg-white rounded-xl border border-navy-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-navy-50 border-b border-navy-100">
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Name</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden sm:table-cell">Email</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden md:table-cell">Phone</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Shirt</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Flight</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700 hidden lg:table-cell">Team Pref</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Payment</th>
-                      <th className="text-left px-4 py-3 font-semibold text-navy-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {players.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-navy-400">
-                          No registrations yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      players.map((player) => (
-                        <tr key={player.id} className="border-b border-navy-50 hover:bg-navy-50/50">
-                          <td className="px-4 py-3 font-medium text-navy-900">
-                            {player.fullName}
-                            {player.returningPlayer && (
-                              <span className="ml-1 text-xs text-gold-500" title="Returning player">*</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-navy-600 hidden sm:table-cell">{player.email}</td>
-                          <td className="px-4 py-3 text-navy-600 hidden md:table-cell">{player.phone}</td>
-                          <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">{player.shirtSize}</td>
-                          <td className="px-4 py-3 text-navy-600">{player.genderFlight}</td>
-                          <td className="px-4 py-3 text-navy-600 hidden lg:table-cell">
-                            {player.teamPreference || "-"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {statusBadge(player.payment?.status || "unpaid")}
-                          </td>
-                          <td className="px-4 py-3">
-                            {player.payment?.status !== "paid_online" && player.payment?.status !== "paid_manual" && (
-                              <button
-                                onClick={() => updatePaymentStatus(player.id, "paid_manual")}
-                                className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                              >
-                                Mark Paid
-                              </button>
-                            )}
-                            {(player.payment?.status === "paid_online" || player.payment?.status === "paid_manual") && (
-                              <button
-                                onClick={() => updatePaymentStatus(player.id, "unpaid")}
-                                className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
-                              >
-                                Mark Unpaid
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
-        )}
+        {activeTab === "players" && <AdminPlayers password={password} />}
 
         {/* Other tabs */}
         {activeTab === "teams" && <AdminTeams password={password} />}
