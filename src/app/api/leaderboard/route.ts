@@ -18,7 +18,7 @@ function getCurrentHole(startingHole: number, holesCompleted: number, numHoles: 
   return ((startingHole - 1 + holesCompleted) % numHoles) + 1;
 }
 
-const EMPTY = { mens: [], womens: [], teamStableford: [], shotgunChampion: [], holes: [], numHoles: 0 };
+const EMPTY = { mens: [], womens: [], teamStableford: [], shotgunChampion: [], holes: [], numHoles: 0, finalized: false };
 
 export async function GET() {
   try {
@@ -236,6 +236,7 @@ export async function GET() {
     shotgunChampion,
     holes: holesResponse,
     numHoles,
+    finalized: tournament.finalized,
   });
   } catch (e) {
     console.error("Leaderboard API error:", e);

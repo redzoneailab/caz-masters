@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
   }
 
+  if (tournament.finalized) {
+    return NextResponse.json({ error: "Tournament has been finalized. Scoring is locked." }, { status: 400 });
+  }
+
   // Validate universal PIN
   if (!tournament.scorerPin || tournament.scorerPin !== pin) {
     return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });

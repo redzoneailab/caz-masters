@@ -57,6 +57,7 @@ export default function LeaderboardView() {
   const [shotgunChampion, setShotgunChampion] = useState<BeerEntry[]>([]);
   const [holes, setHoles] = useState<HoleInfo[]>([]);
   const [numHoles, setNumHoles] = useState(0);
+  const [finalized, setFinalized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<string>("");
@@ -72,6 +73,7 @@ export default function LeaderboardView() {
       setShotgunChampion(data.shotgunChampion);
       setHoles(data.holes);
       setNumHoles(data.numHoles || 0);
+      setFinalized(data.finalized || false);
       setLastRefresh(new Date().toLocaleTimeString());
     } catch { /* offline */ }
     setLoading(false);
@@ -203,24 +205,32 @@ export default function LeaderboardView() {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-black text-white uppercase">Live Leaderboard</h1>
+              <h1 className="text-2xl font-black text-white uppercase">
+                {finalized ? "Final Results" : "Live Leaderboard"}
+              </h1>
               <p className="text-navy-400 text-xs mt-0.5">
-                {lastRefresh ? `Updated ${lastRefresh}` : "Loading..."} &middot; Auto-refreshes every 30s
+                {finalized
+                  ? "Official final standings"
+                  : lastRefresh ? `Updated ${lastRefresh} \u00b7 Auto-refreshes every 30s` : "Loading..."}
               </p>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={fetchData}
-                className="bg-navy-800 hover:bg-navy-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
-              >
-                Refresh
-              </button>
-              <Link
-                href="/scoring"
-                className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-3 py-2 rounded-lg text-sm transition-colors"
-              >
-                Enter Scores
-              </Link>
+              {!finalized && (
+                <>
+                  <button
+                    onClick={fetchData}
+                    className="bg-navy-800 hover:bg-navy-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Refresh
+                  </button>
+                  <Link
+                    href="/scoring"
+                    className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-3 py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Enter Scores
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 

@@ -38,6 +38,7 @@ interface Tournament {
   freeRegistration: boolean;
   entryFee: number;
   maxPlayers: number;
+  finalized: boolean;
 }
 
 const TABS = [
@@ -51,6 +52,7 @@ const TABS = [
   { id: "store", label: "Store" },
   { id: "after-party", label: "After Party" },
   { id: "polls", label: "Polls" },
+  { id: "tournament-mgmt", label: "Tournament" },
 ];
 
 export default function AdminDashboard() {
@@ -440,7 +442,257 @@ export default function AdminDashboard() {
         {activeTab === "store" && <AdminStore password={password} />}
         {activeTab === "after-party" && <AdminAfterParty password={password} />}
         {activeTab === "polls" && <AdminPolls password={password} />}
+        {activeTab === "tournament-mgmt" && (
+          <TournamentManagement
+            password={password}
+            finalized={tournament?.finalized ?? false}
+            onComplete={fetchData}
+          />
+        )}
       </div>
     </section>
+  );
+}
+
+function TournamentManagement({ password, finalized, onComplete }: { password: string; finalized: boolean; onComplete: () => void }) {
+  const [resetStep, setResetStep] = useState(0);
+  const [finalizeStep, setFinalizeStep] = useState(0);
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${password}`,
+  };
+
+  async function handleReset() {
+    if (resetStep < 2) {
+      setResetStep(resetStep + 1);
+      return;
+    }
+    setProcessing(true);
+    setError("");
+    setResult("");
+    try {
+      const res = await fetch("/api/admin/tournament/reset", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ confirm: "RESET" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Reset failed");
+      } else {
+        setResult(data.message);
+        onComplete();
+      }
+    } catch {
+      setError("Reset failed");
+    } finally {
+      setProcessing(false);
+      setResetStep(0);
+    }
+  }
+
+  async function handleFinalize() {
+    if (finalizeStep < 2) {
+      setFinalizeStep(finalizeStep + 1);
+      return;
+    }
+    setProcessing(true);
+    setError("");
+    setResult("");
+    try {
+      const res = await fetch("/api/admin/tournament/finalize", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ confirm: "FINALIZE" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Finalization failed");
+      } else {
+        setResult(data.message);
+        onComplete();
+      }
+    } catch {
+      setError("Finalization failed");
+    } finally {
+      setProcessing(false);
+      setFinalizeStep(0);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {error && (
+        <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-4 py-3 text-sm">{error}</div>
+      )}
+      {result && (
+        <div className="bg-green-50 text-green-700 border border-green-200 rounded-lg px-4 py-3 text-sm">{result}</div>
+      )}
+
+      {/* Finalize Tournament */}
+      <div className={`rounded-xl border-2 p-6 ${finalized ? "border-gold-400 bg-gold-50" : "border-navy-200 bg-white"}`}>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gold-400 flex items-center justify-center shrink-0">
+            <span className="text-2xl">&#127942;</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-navy-900">Finalize Tournament</h3>
+            {finalized ? (
+              <p className="text-gold-700 font-semibold mt-1">This tournament has been finalized.</p>
+            ) : (
+              <>
+                <p className="text-navy-600 text-sm mt-1">
+                  Lock all scores, auto-populate the Hall of Fame with winners, close registration,
+                  and create next year&apos;s tournament. All data is preserved permanently.
+                </p>
+                <ul className="text-navy-500 text-xs mt-3 space-y-1">
+                  <li>&#x2022; Locks scores &mdash; no more editing</li>
+                  <li>&#x2022; Writes champions to Hall of Fame (men&apos;s, women&apos;s, team, shotgun, fan votes)</li>
+                  <li>&#x2022; Closes registration and locks teams</li>
+                  <li>&#x2022; Freezes leaderboard as official final results</li>
+                  <li>&#x2022; Creates next year&apos;s tournament record</li>
+                </ul>
+                <div className="mt-4">
+                  {finalizeStep === 0 && (
+                    <button
+                      onClick={handleFinalize}
+                      disabled={processing}
+                      className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      Finalize Tournament
+                    </button>
+                  )}
+                  {finalizeStep === 1 && (
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                      <p className="text-amber-800 font-bold text-sm">Are you sure?</p>
+                      <p className="text-amber-700 text-xs mt-1">This will lock all scores and write final results. This cannot be undone.</p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={handleFinalize}
+                          disabled={processing}
+                          className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                        >
+                          Yes, Finalize
+                        </button>
+                        <button
+                          onClick={() => setFinalizeStep(0)}
+                          className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {finalizeStep === 2 && (
+                    <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+                      <p className="text-red-800 font-bold text-sm">Final confirmation</p>
+                      <p className="text-red-700 text-xs mt-1">Scores will be permanently locked. Hall of Fame entries will be created. This is irreversible.</p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={handleFinalize}
+                          disabled={processing}
+                          className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                        >
+                          {processing ? "Finalizing..." : "FINALIZE NOW"}
+                        </button>
+                        <button
+                          onClick={() => setFinalizeStep(0)}
+                          className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reset Tournament */}
+      <div className="rounded-xl border-2 border-red-200 bg-white p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+            <span className="text-2xl">&#9888;&#65039;</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-red-900">Reset Tournament Data</h3>
+            <p className="text-navy-600 text-sm mt-1">
+              Delete all player registrations, teams, scores, payments, after party registrations, and votes.
+              Use this to clear test data before launch.
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+              <p className="text-red-800 text-xs font-semibold">What gets DELETED:</p>
+              <p className="text-red-700 text-xs mt-1">
+                Players, teams, scores, payments, beer tabs, after party registrations, poll votes
+              </p>
+              <p className="text-green-800 text-xs font-semibold mt-2">What is PRESERVED:</p>
+              <p className="text-green-700 text-xs mt-1">
+                Tournament config, course data, Hall of Fame, gallery, store products, poll configs, accounts
+              </p>
+            </div>
+            <div className="mt-4">
+              {resetStep === 0 && (
+                <button
+                  onClick={handleReset}
+                  disabled={processing}
+                  className="bg-red-100 hover:bg-red-200 text-red-800 font-bold px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Reset Tournament Data
+                </button>
+              )}
+              {resetStep === 1 && (
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                  <p className="text-amber-800 font-bold text-sm">Are you sure?</p>
+                  <p className="text-amber-700 text-xs mt-1">This will delete ALL registrations, scores, teams, and payments. This cannot be undone.</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={handleReset}
+                      disabled={processing}
+                      className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                    >
+                      Yes, I&apos;m Sure
+                    </button>
+                    <button
+                      onClick={() => setResetStep(0)}
+                      className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              {resetStep === 2 && (
+                <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+                  <p className="text-red-800 font-bold text-sm">LAST CHANCE</p>
+                  <p className="text-red-700 text-xs mt-1">All player data will be permanently deleted. There is no undo. Are you absolutely sure?</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={handleReset}
+                      disabled={processing}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                    >
+                      {processing ? "Resetting..." : "DELETE EVERYTHING"}
+                    </button>
+                    <button
+                      onClick={() => setResetStep(0)}
+                      className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
