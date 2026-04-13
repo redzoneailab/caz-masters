@@ -76,10 +76,6 @@ export default function Navbar() {
       .catch(() => {});
   }, []);
 
-  const tournamentItems = hasActivePolls
-    ? [...baseTournamentItems, { href: "/vote", label: "Vote" }]
-    : baseTournamentItems;
-
   function toggleMobileGroup(group: string) {
     setMobileExpanded(mobileExpanded === group ? null : group);
   }
@@ -95,8 +91,11 @@ export default function Navbar() {
           {/* Desktop */}
           <div className="hidden lg:flex items-center gap-6">
             <Link href="/" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Home</Link>
-            <NavDropdown label="Tournament" items={tournamentItems} />
+            <NavDropdown label="Tournament" items={baseTournamentItems} />
             <Link href="/store" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Store</Link>
+            {hasActivePolls && (
+              <Link href="/vote" className="text-gold-400 hover:text-gold-300 transition-colors text-sm font-black uppercase tracking-wider">Vote</Link>
+            )}
             <NavDropdown label="Record Book" items={recordBookItems} />
             <Link href="/about" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">About</Link>
             {session ? (
@@ -163,7 +162,7 @@ export default function Navbar() {
             </button>
             {mobileExpanded === "tournament" && (
               <div className="pl-4 space-y-1">
-                {tournamentItems.map((item) => (
+                {baseTournamentItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -177,6 +176,9 @@ export default function Navbar() {
             )}
 
             <Link href="/store" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Store</Link>
+            {hasActivePolls && (
+              <Link href="/vote" onClick={() => setOpen(false)} className="block text-gold-400 hover:text-gold-300 py-2 font-black text-base uppercase tracking-wider">Vote</Link>
+            )}
 
             {/* Record Book group */}
             <button
