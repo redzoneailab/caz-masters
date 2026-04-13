@@ -50,7 +50,7 @@ function NavDropdown({ label, items }: DropdownProps) {
   );
 }
 
-const tournamentItems = [
+const baseTournamentItems = [
   { href: "/info", label: "Information" },
   { href: "/teams", label: "Teams" },
   { href: "/scoring", label: "Scoring" },
@@ -66,7 +66,19 @@ const recordBookItems = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [hasActivePolls, setHasActivePolls] = useState(false);
   const { data: session } = useSession();
+
+  useEffect(() => {
+    fetch("/api/polls/active-count")
+      .then((r) => r.json())
+      .then((d) => setHasActivePolls(d.count > 0))
+      .catch(() => {});
+  }, []);
+
+  const tournamentItems = hasActivePolls
+    ? [...baseTournamentItems, { href: "/vote", label: "Vote" }]
+    : baseTournamentItems;
 
   function toggleMobileGroup(group: string) {
     setMobileExpanded(mobileExpanded === group ? null : group);

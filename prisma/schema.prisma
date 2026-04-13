@@ -30,6 +30,7 @@ model Tournament {
   players            Player[]
   teams              Team[]
   scores             Score[]
+  polls              Poll[]
 }
 
 model Player {
@@ -95,8 +96,47 @@ model UserAccount {
   avatarUrl String?
   bio       String?
   players   Player[]
+  votes     Vote[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Poll {
+  id                   String       @id @default(cuid())
+  title                String
+  type                 String       @default("team") // "team" or "individual"
+  tournamentId         String
+  tournament           Tournament   @relation(fields: [tournamentId], references: [id])
+  active               Boolean      @default(false)
+  showResultsBeforeClose Boolean    @default(true)
+  finalized            Boolean      @default(false)
+  options              PollOption[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  pollId    String
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  label     String
+  teamId    String?
+  playerId  String?
+  votes     Vote[]
+  createdAt DateTime @default(now())
+
+  @@unique([pollId, label])
+}
+
+model Vote {
+  id            String      @id @default(cuid())
+  optionId      String
+  option        PollOption  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userAccountId String
+  userAccount   UserAccount @relation(fields: [userAccountId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@unique([optionId, userAccountId])
 }
 
 model VerificationToken {

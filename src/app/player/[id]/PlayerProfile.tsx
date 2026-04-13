@@ -34,6 +34,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   team: "Winning Team",
   shotgun_champion: "Shotgun Champion",
   special_award: "Special Award",
+  fan_vote: "Fan Vote",
 };
 
 function formatToPar(toPar: number) {

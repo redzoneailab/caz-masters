@@ -26,6 +26,7 @@ const CATEGORIES: Record<string, string> = {
   team: "Winning Team",
   shotgun_champion: "Shotgun Champion",
   special_award: "Special Award",
+  fan_vote: "Fan Vote",
 };
 
 // Champion photos by year (static assets)
@@ -45,6 +46,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   team: "\uD83C\uDFC5",
   shotgun_champion: "\uD83C\uDF7A",
   special_award: "\u2B50",
+  fan_vote: "\uD83D\uDDF3\uFE0F",
 };
 
 interface YearResult {
@@ -367,7 +369,7 @@ export default async function HistoryPage() {
                           </p>
                         )}
                         <div className="grid sm:grid-cols-2 gap-5">
-                          {(["mens_individual", "womens_individual", "senior_individual", "team", "shotgun_champion", "special_award"] as const).map((cat) => {
+                          {(["mens_individual", "womens_individual", "senior_individual", "team", "shotgun_champion", "special_award", "fan_vote"] as const).map((cat) => {
                             const catEntries = yearData.entries.filter((e) => e.category === cat);
                             if (catEntries.length === 0) return null;
                             return (

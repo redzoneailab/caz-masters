@@ -19,6 +19,7 @@ const CATEGORIES = [
   { value: "team", label: "Winning Team" },
   { value: "shotgun_champion", label: "Shotgun Champion" },
   { value: "special_award", label: "Special Award" },
+  { value: "fan_vote", label: "Fan Vote" },
 ];
 
 // Years 2012-2025 for the 14 prior years

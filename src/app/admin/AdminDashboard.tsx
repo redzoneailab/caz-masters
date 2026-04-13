@@ -9,6 +9,7 @@ import AdminCourse from "./AdminCourse";
 import AdminScoring from "./AdminScoring";
 import AdminStore from "./AdminStore";
 import AdminAfterParty from "./AdminAfterParty";
+import AdminPolls from "./AdminPolls";
 
 interface Payment {
   id: string;
@@ -49,6 +50,7 @@ const TABS = [
   { id: "donations", label: "Donations" },
   { id: "store", label: "Store" },
   { id: "after-party", label: "After Party" },
+  { id: "polls", label: "Polls" },
 ];
 
 export default function AdminDashboard() {
@@ -437,6 +439,7 @@ export default function AdminDashboard() {
         {activeTab === "donations" && <AdminDonations password={password} />}
         {activeTab === "store" && <AdminStore password={password} />}
         {activeTab === "after-party" && <AdminAfterParty password={password} />}
+        {activeTab === "polls" && <AdminPolls password={password} />}
       </div>
     </section>
   );
