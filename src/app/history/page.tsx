@@ -289,7 +289,7 @@ export default async function HistoryPage() {
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border-2 border-gold-400/30 shadow-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://image.pollinations.ai/prompt/A%20gold%20blazer%20jacket%20hanging%20on%20a%20wooden%20hanger%20in%20a%20classic%20golf%20club%20locker%20room%20with%20dark%20wood%20lockers%2C%20dramatic%20lighting%2C%20photorealistic?width=800&height=600&nologo=true&seed=42"
+                src="https://image.pollinations.ai/prompt/A%20full-length%20gold%20sport%20coat%20blazer%20hanging%20on%20a%20wooden%20hanger%20in%20a%20classic%20golf%20club%20locker%20room%2C%20the%20coat%20is%20long%20like%20a%20traditional%20mens%20sport%20jacket%20with%20lapels%20and%20buttons%2C%20shimmering%20gold%20fabric%2C%20dark%20wood%20lockers%20in%20background%2C%20dramatic%20warm%20lighting%2C%20photorealistic?width=800&height=600&nologo=true&seed=77"
                 alt="The Gold Jacket"
                 className="absolute inset-0 w-full h-full object-cover"
               />
