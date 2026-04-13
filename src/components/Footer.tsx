@@ -16,7 +16,6 @@ export default function Footer() {
               <Link href="/register" className="hover:text-gold-400 transition-colors">Register</Link>
             </div>
             <div className="flex flex-col gap-2 text-sm font-medium">
-              <Link href="/store" className="hover:text-gold-400 transition-colors">Store</Link>
               <Link href="/afterparty" className="hover:text-white transition-colors">After Party</Link>
             </div>
             <div className="flex flex-col gap-2 text-sm font-medium">

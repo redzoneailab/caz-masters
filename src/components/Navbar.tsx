@@ -92,7 +92,6 @@ export default function Navbar() {
           <div className="hidden lg:flex items-center gap-6">
             <Link href="/" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Home</Link>
             <NavDropdown label="Tournament" items={baseTournamentItems} />
-            <Link href="/store" className="text-white/80 hover:text-white transition-colors text-sm font-semibold">Store</Link>
             {hasActivePolls && (
               <Link href="/vote" className="text-gold-400 hover:text-gold-300 transition-colors text-sm font-black uppercase tracking-wider">Vote</Link>
             )}
@@ -175,7 +174,6 @@ export default function Navbar() {
               </div>
             )}
 
-            <Link href="/store" onClick={() => setOpen(false)} className="block text-white/80 hover:text-white py-2 font-semibold text-base">Store</Link>
             {hasActivePolls && (
               <Link href="/vote" onClick={() => setOpen(false)} className="block text-gold-400 hover:text-gold-300 py-2 font-black text-base uppercase tracking-wider">Vote</Link>
             )}
