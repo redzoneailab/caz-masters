@@ -234,7 +234,7 @@ export default async function HistoryPage() {
     if (entries.length > 0) {
       autoResults.push({
         year: tournament.year,
-        edition: tournament.year - 2012,
+        edition: tournament.year - 2011,
         entries,
         fromScores: true,
       });
@@ -244,7 +244,7 @@ export default async function HistoryPage() {
   // Combine HoF entries and auto-results
   const hofYears: YearResult[] = Object.entries(hofByYear).map(([yearStr, entries]) => ({
     year: parseInt(yearStr),
-    edition: parseInt(yearStr) - 2012,
+    edition: parseInt(yearStr) - 2011,
     entries: entries.map((e) => ({
       category: e.category,
       winnerName: e.winnerName,

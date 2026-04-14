@@ -1,7 +1,7 @@
 export const TOURNAMENT = {
   name: "The Caz Masters",
   year: 2026,
-  edition: "14th Annual",
+  edition: "15th Annual",
   date: new Date("2026-07-03T08:00:00-04:00"),
   dateDisplay: "Friday, July 3rd, 2026",
   location: "Cazenovia Golf Club",

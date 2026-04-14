@@ -127,7 +127,7 @@ export default function AboutPage() {
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
           <h2 className="text-4xl sm:text-6xl font-black mb-6 uppercase">Your Turn</h2>
           <p className="text-xl text-white/80 mb-10 font-light">
-            14th anniversary. 72 spots. Don&apos;t miss this one.
+            15th anniversary. 72 spots. Don&apos;t miss this one.
           </p>
           <Link
             href="/register"

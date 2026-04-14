@@ -4,7 +4,7 @@ import TeamsBoard from "./TeamsBoard";
 
 export const metadata = {
   title: "Teams",
-  description: "Form your team for the 14th Annual Caz Masters tournament.",
+  description: "Form your team for the 15th Annual Caz Masters tournament.",
 };
 
 export const dynamic = "force-dynamic";
