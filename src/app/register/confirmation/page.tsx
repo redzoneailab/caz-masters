@@ -58,7 +58,7 @@ export default async function ConfirmationPage({
               Go
             </h1>
             <p className="text-white/90 text-xl mb-2">
-              You&apos;re in. Welcome to the 15th Annual Caz Masters.
+              You&apos;re in. Welcome to the 14th Annual Caz Masters.
             </p>
             {isPaid ? (
               <p className="text-gold-400 font-bold text-lg mb-8">

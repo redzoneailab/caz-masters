@@ -73,7 +73,7 @@ export async function sendConfirmationEmail(
         <h1 style="color: #15803d; font-size: 28px;">Welcome to The Caz Masters!</h1>
         <p style="font-size: 16px; color: #333;">Hey ${playerName},</p>
         <p style="font-size: 16px; color: #333;">
-          You're officially registered for the 15th Annual Caz Masters tournament!
+          You're officially registered for the 14th Annual Caz Masters tournament!
         </p>
         <div style="background: #f0fdf0; border-radius: 8px; padding: 20px; margin: 20px 0;">
           <p style="margin: 4px 0;"><strong>Date:</strong> Friday, July 3rd, 2026</p>

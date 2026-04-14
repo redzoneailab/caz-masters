@@ -41,7 +41,7 @@ export default function AboutPage() {
               <div className="space-y-4 text-navy-600 text-lg leading-relaxed">
                 <p>
                   A group of friends. A holiday weekend. A shared belief that golf is better
-                  with cold beers and something on the line. The Caz Masters started in 2011 as
+                  with cold beers and something on the line. The Caz Masters started in 2012 as
                   a casual round and quickly became the thing everyone looks forward to all year.
                 </p>
                 <p>
@@ -127,7 +127,7 @@ export default function AboutPage() {
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
           <h2 className="text-4xl sm:text-6xl font-black mb-6 uppercase">Your Turn</h2>
           <p className="text-xl text-white/80 mb-10 font-light">
-            15th anniversary. 72 spots. Don&apos;t miss this one.
+            14th anniversary. 72 spots. Don&apos;t miss this one.
           </p>
           <Link
             href="/register"

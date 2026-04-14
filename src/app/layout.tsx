@@ -18,13 +18,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://cazmasters.com"),
   title: {
-    default: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    default: "The Caz Masters | 14th Annual Charity Golf Tournament",
     template: "%s | The Caz Masters",
   },
   description:
     "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
   openGraph: {
-    title: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    title: "The Caz Masters | 14th Annual Charity Golf Tournament",
     description:
       "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
     url: "https://cazmasters.com",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Caz Masters | 15th Annual Charity Golf Tournament",
+    title: "The Caz Masters | 14th Annual Charity Golf Tournament",
     description:
       "72 players. 18 holes. All for charity. July 3rd, 2026 at Cazenovia Golf Club.",
     images: ["/images/group-2018.jpg"],

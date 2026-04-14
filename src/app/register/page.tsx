@@ -9,7 +9,7 @@ import { getTournamentSettings } from "@/lib/tournament-settings";
 
 export const metadata: Metadata = {
   title: "Register",
-  description: "Register for the 15th Annual Caz Masters charity golf tournament.",
+  description: "Register for the 14th Annual Caz Masters charity golf tournament.",
 };
 
 export const dynamic = "force-dynamic";
