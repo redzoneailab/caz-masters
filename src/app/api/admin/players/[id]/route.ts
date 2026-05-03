@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWaitlistPromotionEmail } from "@/lib/resend";
 
 function checkAuth(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -42,9 +43,33 @@ export async function PATCH(
   if (body.dietaryNeeds !== undefined) playerData.dietaryNeeds = body.dietaryNeeds || null;
   if (body.teamId !== undefined) playerData.teamId = body.teamId || null;
   if (body.flaggedAsSpam !== undefined) playerData.flaggedAsSpam = !!body.flaggedAsSpam;
+  if (body.waitlisted !== undefined) playerData.waitlisted = !!body.waitlisted;
+
+  // Detect waitlist promotion (true -> false) so we can email the player.
+  let promoted = false;
+  let emailRecipient: { email: string; fullName: string } | null = null;
+  if (body.waitlisted === false) {
+    const before = await prisma.player.findUnique({
+      where: { id },
+      select: { waitlisted: true, email: true, fullName: true },
+    });
+    if (before?.waitlisted) {
+      promoted = true;
+      emailRecipient = { email: before.email, fullName: before.fullName };
+    }
+  }
 
   if (Object.keys(playerData).length > 0) {
     await prisma.player.update({ where: { id }, data: playerData });
+  }
+
+  if (promoted && emailRecipient) {
+    try {
+      await sendWaitlistPromotionEmail(emailRecipient.email, emailRecipient.fullName);
+    } catch (err) {
+      console.error("Failed to send waitlist promotion email:", err);
+      // Don't fail the request — promotion already persisted.
+    }
   }
 
   const player = await prisma.player.findUnique({
@@ -52,7 +77,7 @@ export async function PATCH(
     include: { payment: true, team: { select: { id: true, name: true } } },
   });
 
-  return NextResponse.json({ player });
+  return NextResponse.json({ player, promoted });
 }
 
 export async function DELETE(

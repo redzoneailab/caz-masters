@@ -24,6 +24,7 @@ interface Player {
   teamPreference: string | null;
   returningPlayer: boolean;
   flaggedAsSpam: boolean;
+  waitlisted: boolean;
   dietaryNeeds: string | null;
   payment: Payment | null;
   team: Team | null;
@@ -43,6 +44,7 @@ type PaymentFilter = "all" | "paid" | "unpaid";
 type FlightFilter = "all" | "Men" | "Women";
 type TeamFilter = "all" | "assigned" | "unassigned";
 type SpamFilter = "all" | "flagged" | "clean";
+type WaitlistFilter = "all" | "active" | "waitlisted";
 
 export default function AdminPlayers({ password }: { password: string }) {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -57,6 +59,7 @@ export default function AdminPlayers({ password }: { password: string }) {
   const [flightFilter, setFlightFilter] = useState<FlightFilter>("all");
   const [teamFilter, setTeamFilter] = useState<TeamFilter>("all");
   const [spamFilter, setSpamFilter] = useState<SpamFilter>("all");
+  const [waitlistFilter, setWaitlistFilter] = useState<WaitlistFilter>("all");
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -116,8 +119,16 @@ export default function AdminPlayers({ password }: { password: string }) {
     if (teamFilter === "unassigned") result = result.filter((p) => !p.team);
     if (spamFilter === "flagged") result = result.filter((p) => p.flaggedAsSpam);
     if (spamFilter === "clean") result = result.filter((p) => !p.flaggedAsSpam);
+    if (waitlistFilter === "waitlisted") {
+      // First-come, first-served when viewing the waitlist.
+      result = result
+        .filter((p) => p.waitlisted)
+        .slice()
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    if (waitlistFilter === "active") result = result.filter((p) => !p.waitlisted);
     return result;
-  }, [players, search, paymentFilter, flightFilter, teamFilter, spamFilter]);
+  }, [players, search, paymentFilter, flightFilter, teamFilter, spamFilter, waitlistFilter]);
 
   async function updatePaymentStatus(playerId: string, paymentStatus: string) {
     try {
@@ -126,11 +137,45 @@ export default function AdminPlayers({ password }: { password: string }) {
     } catch { setError("Failed to update"); }
   }
 
+  async function promoteFromWaitlist(player: Player) {
+    try {
+      const res = await fetch(`/api/admin/players/${player.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ waitlisted: false }),
+      });
+      if (!res.ok) throw new Error();
+      await fetchData();
+    } catch { setError(`Failed to promote ${player.fullName}`); }
+  }
+
+  function nextOnWaitlist(): Player | null {
+    const queue = players
+      .filter((p) => p.waitlisted && !p.flaggedAsSpam)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return queue[0] || null;
+  }
+
   async function removePlayer(id: string) {
+    const target = players.find((p) => p.id === id);
+    if (!target) return;
     if (!confirm("Remove this player? This deletes their registration, payment, and scores.")) return;
     try {
       await fetch(`/api/admin/players/${id}`, { method: "DELETE", headers });
       setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+
+      // If we just freed up a registered spot, offer to promote the next waitlisted player.
+      if (!target.waitlisted) {
+        const next = nextOnWaitlist();
+        if (next && confirm(`A spot just opened up. Promote ${next.fullName} (${next.email}) from the waitlist? They'll be emailed automatically.`)) {
+          await fetch(`/api/admin/players/${next.id}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ waitlisted: false }),
+          });
+        }
+      }
+
       await fetchData();
     } catch { setError("Failed to remove player"); }
   }
@@ -177,8 +222,27 @@ export default function AdminPlayers({ password }: { password: string }) {
 
   async function bulkRemove() {
     if (!confirm(`Remove ${selected.size} player(s)? This cannot be undone.`)) return;
+    const removed = players.filter((p) => selected.has(p.id));
+    const freedSpots = removed.filter((p) => !p.waitlisted).length;
     for (const id of selected) await fetch(`/api/admin/players/${id}`, { method: "DELETE", headers });
     setSelected(new Set());
+
+    if (freedSpots > 0) {
+      const queue = players
+        .filter((p) => p.waitlisted && !p.flaggedAsSpam && !selected.has(p.id))
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .slice(0, freedSpots);
+      if (queue.length > 0 && confirm(`${freedSpots} spot(s) opened up. Promote the next ${queue.length} waitlisted player(s) (${queue.map((p) => p.fullName).join(", ")})? They'll each be emailed.`)) {
+        for (const p of queue) {
+          await fetch(`/api/admin/players/${p.id}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ waitlisted: false }),
+          });
+        }
+      }
+    }
+
     await fetchData();
   }
 
@@ -242,6 +306,8 @@ export default function AdminPlayers({ password }: { password: string }) {
   const paidCount = players.filter((p) => p.payment?.status === "paid_online" || p.payment?.status === "paid_manual").length;
   const unpaidCount = players.filter((p) => p.payment?.status === "unpaid" || !p.payment).length;
   const flaggedCount = players.filter((p) => p.flaggedAsSpam).length;
+  const waitlistedCount = players.filter((p) => p.waitlisted).length;
+  const activeCount = players.length - waitlistedCount;
   const selectClass = "border border-navy-200 rounded-lg px-3 py-2 text-sm bg-white";
   const inputClass = "w-full border border-navy-200 rounded-lg px-3 py-2 text-sm";
 
@@ -256,11 +322,16 @@ export default function AdminPlayers({ password }: { password: string }) {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl p-4 border border-navy-100">
           <p className="text-sm text-navy-500">Registered</p>
-          <p className="text-3xl font-bold text-navy-900">{players.length}</p>
+          <p className="text-3xl font-bold text-navy-900">{activeCount}</p>
           <p className="text-xs text-navy-400">of {tournament?.maxPlayers || 60}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-navy-100">
+          <p className="text-sm text-navy-500">Waitlisted</p>
+          <p className="text-3xl font-bold text-amber-600">{waitlistedCount}</p>
+          <p className="text-xs text-navy-400">{waitlistedCount === 1 ? "player" : "players"} waiting</p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-navy-100">
           <p className="text-sm text-navy-500">Paid</p>
@@ -318,6 +389,11 @@ export default function AdminPlayers({ password }: { password: string }) {
           <option value="flagged">Flagged Only</option>
           <option value="clean">Unflagged Only</option>
         </select>
+        <select value={waitlistFilter} onChange={(e) => setWaitlistFilter(e.target.value as WaitlistFilter)} className={selectClass}>
+          <option value="all">All Status</option>
+          <option value="active">Registered Only</option>
+          <option value="waitlisted">Waitlisted Only</option>
+        </select>
       </div>
 
       {/* Bulk actions */}
@@ -358,13 +434,14 @@ export default function AdminPlayers({ password }: { password: string }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-navy-400">{search || paymentFilter !== "all" || flightFilter !== "all" || teamFilter !== "all" ? "No matching players." : "No registrations yet."}</td></tr>
               ) : filtered.map((p) => (
-                <tr key={p.id} className={`border-b border-navy-50 hover:bg-navy-50/50 ${p.flaggedAsSpam ? "bg-red-50/40" : ""}`}>
+                <tr key={p.id} className={`border-b border-navy-50 hover:bg-navy-50/50 ${p.flaggedAsSpam ? "bg-red-50/40" : p.waitlisted ? "bg-amber-50/40" : ""}`}>
                   <td className="px-3 py-3"><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded border-navy-300" /></td>
                   <td className="px-4 py-3">
                     <button onClick={() => openEdit(p)} className="font-medium text-navy-900 hover:text-gold-600 text-left">
                       {p.fullName}
                       {p.returningPlayer && <span className="ml-1 text-xs text-gold-500">*</span>}
                       {p.flaggedAsSpam && <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wide">Spam</span>}
+                      {p.waitlisted && <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wide">Waitlist</span>}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-navy-600 hidden sm:table-cell">{p.email}</td>
@@ -385,6 +462,14 @@ export default function AdminPlayers({ password }: { password: string }) {
                       )}
                       {(p.payment?.status === "paid_online" || p.payment?.status === "paid_manual") && (
                         <button onClick={() => updatePaymentStatus(p.id, "unpaid")} className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-2 py-1 rounded-lg">Unpaid</button>
+                      )}
+                      {p.waitlisted && (
+                        <button
+                          onClick={() => promoteFromWaitlist(p)}
+                          className="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 rounded-lg font-medium"
+                        >
+                          Promote
+                        </button>
                       )}
                       <button onClick={() => openEdit(p)} className="text-xs bg-navy-50 text-navy-600 hover:bg-navy-100 px-2 py-1 rounded-lg">Edit</button>
                       <button
