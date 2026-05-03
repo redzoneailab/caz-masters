@@ -43,6 +43,7 @@ model Player {
   teamPreference  String?
   returningPlayer Boolean      @default(false)
   waitlisted      Boolean      @default(false)
+  flaggedAsSpam   Boolean      @default(false)
   dietaryNeeds    String?
   tournamentId    String
   tournament      Tournament   @relation(fields: [tournamentId], references: [id])
@@ -145,6 +146,14 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model RateLimitAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }
 
 model HallOfFameEntry {

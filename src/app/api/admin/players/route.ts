@@ -92,3 +92,33 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ player }, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  if (url.searchParams.get("scope") !== "flagged") {
+    return NextResponse.json({ error: "Missing or invalid scope" }, { status: 400 });
+  }
+
+  const flagged = await prisma.player.findMany({
+    where: { flaggedAsSpam: true },
+    select: { id: true },
+  });
+  const ids = flagged.map((p) => p.id);
+
+  if (ids.length === 0) {
+    return NextResponse.json({ deleted: 0 });
+  }
+
+  // Delete in FK-safe order
+  await prisma.score.deleteMany({ where: { playerId: { in: ids } } });
+  await prisma.beerTab.deleteMany({ where: { playerId: { in: ids } } });
+  await prisma.payment.deleteMany({ where: { playerId: { in: ids } } });
+  await prisma.afterPartyRegistration.deleteMany({ where: { playerId: { in: ids } } });
+  await prisma.player.deleteMany({ where: { id: { in: ids } } });
+
+  return NextResponse.json({ deleted: ids.length });
+}

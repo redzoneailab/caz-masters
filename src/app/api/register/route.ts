@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { sendConfirmationEmail } from "@/lib/resend";
 import { TOURNAMENT } from "@/lib/tournament";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,23 @@ export async function POST(req: NextRequest) {
       genderFlight,
       paymentMethod,
       afterParty,
+      website, // honeypot — real users leave blank
     } = body;
+
+    // Honeypot: silently accept then drop. Bots get a "success" but no record is created.
+    if (typeof website === "string" && website.trim().length > 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    // Rate limit: 5 attempts per IP per hour
+    const ip = getClientIp(req);
+    const rl = await checkRateLimit(`register:${ip}`, 5, 3600);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
 
     // Validate required fields
     if (!fullName || !email || !phone || !shirtSize || !genderFlight) {

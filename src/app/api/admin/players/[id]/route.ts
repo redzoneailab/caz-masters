@@ -41,6 +41,7 @@ export async function PATCH(
   if (body.teamPreference !== undefined) playerData.teamPreference = body.teamPreference || null;
   if (body.dietaryNeeds !== undefined) playerData.dietaryNeeds = body.dietaryNeeds || null;
   if (body.teamId !== undefined) playerData.teamId = body.teamId || null;
+  if (body.flaggedAsSpam !== undefined) playerData.flaggedAsSpam = !!body.flaggedAsSpam;
 
   if (Object.keys(playerData).length > 0) {
     await prisma.player.update({ where: { id }, data: playerData });

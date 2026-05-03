@@ -31,6 +31,9 @@ export default function RegistrationForm({ prefill }: Props) {
   const [afterPartyGuests, setAfterPartyGuests] = useState(1);
   const [afterPartyKids, setAfterPartyKids] = useState(0);
 
+  // Honeypot — bots auto-fill fields named like "website"; real users never see it.
+  const [website, setWebsite] = useState("");
+
   useEffect(() => {
     fetch("/api/tournament-info")
       .then((r) => r.json())
@@ -59,6 +62,7 @@ export default function RegistrationForm({ prefill }: Props) {
           ...form,
           paymentMethod,
           afterParty: addAfterParty ? { numGuests: afterPartyGuests, numKids: afterPartyKids } : null,
+          website,
         }),
       });
 
@@ -92,6 +96,23 @@ export default function RegistrationForm({ prefill }: Props) {
 
   return (
     <div className="space-y-5">
+      {/* Honeypot: hidden from real users via CSS + aria-hidden + tabIndex. Bots fill it; we drop the submission. */}
+      <div
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-10000px", top: "auto", width: "1px", height: "1px", overflow: "hidden" }}
+      >
+        <label htmlFor="website">Website</label>
+        <input
+          type="text"
+          id="website"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
+
       {error && (
         <div className="bg-red-50 text-red-700 border border-red-200 rounded-xl px-4 py-3 text-sm font-medium">
           {error}

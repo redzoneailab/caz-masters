@@ -23,6 +23,7 @@ interface Player {
   genderFlight: string;
   teamPreference: string | null;
   returningPlayer: boolean;
+  flaggedAsSpam: boolean;
   dietaryNeeds: string | null;
   payment: Payment | null;
   team: Team | null;
@@ -41,6 +42,7 @@ interface Tournament {
 type PaymentFilter = "all" | "paid" | "unpaid";
 type FlightFilter = "all" | "Men" | "Women";
 type TeamFilter = "all" | "assigned" | "unassigned";
+type SpamFilter = "all" | "flagged" | "clean";
 
 export default function AdminPlayers({ password }: { password: string }) {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -54,6 +56,7 @@ export default function AdminPlayers({ password }: { password: string }) {
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [flightFilter, setFlightFilter] = useState<FlightFilter>("all");
   const [teamFilter, setTeamFilter] = useState<TeamFilter>("all");
+  const [spamFilter, setSpamFilter] = useState<SpamFilter>("all");
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -111,8 +114,10 @@ export default function AdminPlayers({ password }: { password: string }) {
     if (flightFilter !== "all") result = result.filter((p) => p.genderFlight === flightFilter);
     if (teamFilter === "assigned") result = result.filter((p) => p.team);
     if (teamFilter === "unassigned") result = result.filter((p) => !p.team);
+    if (spamFilter === "flagged") result = result.filter((p) => p.flaggedAsSpam);
+    if (spamFilter === "clean") result = result.filter((p) => !p.flaggedAsSpam);
     return result;
-  }, [players, search, paymentFilter, flightFilter, teamFilter]);
+  }, [players, search, paymentFilter, flightFilter, teamFilter, spamFilter]);
 
   async function updatePaymentStatus(playerId: string, paymentStatus: string) {
     try {
@@ -177,6 +182,32 @@ export default function AdminPlayers({ password }: { password: string }) {
     await fetchData();
   }
 
+  async function bulkFlagSpam() {
+    for (const id of selected) {
+      await fetch(`/api/admin/players/${id}`, { method: "PATCH", headers, body: JSON.stringify({ flaggedAsSpam: true }) });
+    }
+    setSelected(new Set());
+    await fetchData();
+  }
+
+  async function toggleSpamFlag(id: string, current: boolean) {
+    try {
+      await fetch(`/api/admin/players/${id}`, { method: "PATCH", headers, body: JSON.stringify({ flaggedAsSpam: !current }) });
+      await fetchData();
+    } catch { setError("Failed to update flag"); }
+  }
+
+  async function deleteAllFlagged() {
+    const flaggedCount = players.filter((p) => p.flaggedAsSpam).length;
+    if (flaggedCount === 0) { setError("No players are flagged as spam."); return; }
+    if (!confirm(`Permanently delete all ${flaggedCount} flagged player(s)? This deletes their registrations, payments, scores, and after-party records. This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/admin/players?scope=flagged`, { method: "DELETE", headers });
+      if (!res.ok) throw new Error();
+      await fetchData();
+    } catch { setError("Failed to delete flagged players"); }
+  }
+
   function toggleSelect(id: string) {
     setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
@@ -210,6 +241,7 @@ export default function AdminPlayers({ password }: { password: string }) {
 
   const paidCount = players.filter((p) => p.payment?.status === "paid_online" || p.payment?.status === "paid_manual").length;
   const unpaidCount = players.filter((p) => p.payment?.status === "unpaid" || !p.payment).length;
+  const flaggedCount = players.filter((p) => p.flaggedAsSpam).length;
   const selectClass = "border border-navy-200 rounded-lg px-3 py-2 text-sm bg-white";
   const inputClass = "w-full border border-navy-200 rounded-lg px-3 py-2 text-sm";
 
@@ -241,6 +273,9 @@ export default function AdminPlayers({ password }: { password: string }) {
         <div className="bg-white rounded-xl p-4 border border-navy-100">
           <p className="text-sm text-navy-500">Registration</p>
           <p className="text-xl font-bold mt-1">{tournament?.registrationOpen ? <span className="text-navy-600">Open</span> : <span className="text-red-700">Closed</span>}</p>
+          {flaggedCount > 0 && (
+            <p className="text-xs text-red-600 font-bold mt-1">{flaggedCount} flagged spam</p>
+          )}
         </div>
       </div>
 
@@ -249,6 +284,11 @@ export default function AdminPlayers({ password }: { password: string }) {
         <button onClick={fetchData} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">Refresh</button>
         <button onClick={exportCSV} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">Export CSV</button>
         <button onClick={() => setShowAdd(true)} className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-4 py-2 rounded-lg text-sm">Add Player</button>
+        {flaggedCount > 0 && (
+          <button onClick={deleteAllFlagged} className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm">
+            Delete All Flagged ({flaggedCount})
+          </button>
+        )}
       </div>
 
       {/* Search + Filters */}
@@ -273,6 +313,11 @@ export default function AdminPlayers({ password }: { password: string }) {
           <option value="assigned">On a Team</option>
           <option value="unassigned">Unassigned</option>
         </select>
+        <select value={spamFilter} onChange={(e) => setSpamFilter(e.target.value as SpamFilter)} className={selectClass}>
+          <option value="all">All Players</option>
+          <option value="flagged">Flagged Only</option>
+          <option value="clean">Unflagged Only</option>
+        </select>
       </div>
 
       {/* Bulk actions */}
@@ -280,6 +325,7 @@ export default function AdminPlayers({ password }: { password: string }) {
         <div className="bg-navy-50 border border-navy-200 rounded-lg p-3 flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-navy-700">{selected.size} selected</span>
           <button onClick={bulkMarkPaid} className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-medium">Mark Paid</button>
+          <button onClick={bulkFlagSpam} className="text-xs bg-red-50 text-red-700 hover:bg-red-100 px-3 py-1.5 rounded-lg font-medium">Flag as Spam</button>
           <div className="flex items-center gap-1">
             <select value={bulkTeamId} onChange={(e) => setBulkTeamId(e.target.value)} className="border border-navy-200 rounded-lg px-2 py-1.5 text-xs">
               <option value="">Assign to team...</option>
@@ -312,12 +358,13 @@ export default function AdminPlayers({ password }: { password: string }) {
               {filtered.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-navy-400">{search || paymentFilter !== "all" || flightFilter !== "all" || teamFilter !== "all" ? "No matching players." : "No registrations yet."}</td></tr>
               ) : filtered.map((p) => (
-                <tr key={p.id} className="border-b border-navy-50 hover:bg-navy-50/50">
+                <tr key={p.id} className={`border-b border-navy-50 hover:bg-navy-50/50 ${p.flaggedAsSpam ? "bg-red-50/40" : ""}`}>
                   <td className="px-3 py-3"><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded border-navy-300" /></td>
                   <td className="px-4 py-3">
                     <button onClick={() => openEdit(p)} className="font-medium text-navy-900 hover:text-gold-600 text-left">
                       {p.fullName}
                       {p.returningPlayer && <span className="ml-1 text-xs text-gold-500">*</span>}
+                      {p.flaggedAsSpam && <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wide">Spam</span>}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-navy-600 hidden sm:table-cell">{p.email}</td>
@@ -340,6 +387,12 @@ export default function AdminPlayers({ password }: { password: string }) {
                         <button onClick={() => updatePaymentStatus(p.id, "unpaid")} className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-2 py-1 rounded-lg">Unpaid</button>
                       )}
                       <button onClick={() => openEdit(p)} className="text-xs bg-navy-50 text-navy-600 hover:bg-navy-100 px-2 py-1 rounded-lg">Edit</button>
+                      <button
+                        onClick={() => toggleSpamFlag(p.id, p.flaggedAsSpam)}
+                        className={`text-xs px-2 py-1 rounded-lg font-medium ${p.flaggedAsSpam ? "bg-amber-50 text-amber-700 hover:bg-amber-100" : "bg-red-50 text-red-700 hover:bg-red-100"}`}
+                      >
+                        {p.flaggedAsSpam ? "Unflag" : "Flag as Spam"}
+                      </button>
                       <button onClick={() => removePlayer(p.id)} className="text-xs text-red-500 hover:text-red-700 px-2 py-1">Remove</button>
                     </div>
                   </td>
