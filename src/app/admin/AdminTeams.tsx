@@ -27,6 +27,12 @@ export default function AdminTeams({ password }: { password: string }) {
   const [numHoles, setNumHoles] = useState(18);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamMaxSize, setNewTeamMaxSize] = useState(4);
+  const [creating, setCreating] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const headers = {
     "Content-Type": "application/json",
@@ -140,6 +146,58 @@ export default function AdminTeams({ password }: { password: string }) {
     }
   }
 
+  async function createTeam(e: React.FormEvent) {
+    e.preventDefault();
+    const name = newTeamName.trim();
+    if (!name) return;
+    setCreating(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/teams", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name, maxSize: newTeamMaxSize }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to create team");
+      }
+      setNewTeamName("");
+      setNewTeamMaxSize(4);
+      setShowCreate(false);
+      await fetchTeams();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create team");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function renameTeam(teamId: string) {
+    const name = renameValue.trim();
+    if (!name) {
+      setRenamingId(null);
+      return;
+    }
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/teams/${teamId}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to rename team");
+      }
+      setRenamingId(null);
+      setRenameValue("");
+      await fetchTeams();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rename team");
+    }
+  }
+
   async function deleteTeam(teamId: string) {
     if (!confirm("Delete this team? Members will become free agents.")) return;
     try {
@@ -168,6 +226,16 @@ export default function AdminTeams({ password }: { password: string }) {
           Teams ({teams.length})
         </h2>
         <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setShowCreate((v) => !v);
+              setNewTeamName("");
+              setNewTeamMaxSize(4);
+            }}
+            className="bg-navy-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-navy-800"
+          >
+            {showCreate ? "Cancel" : "+ Create Team"}
+          </button>
           <button onClick={fetchTeams} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">
             Refresh
           </button>
@@ -201,6 +269,43 @@ export default function AdminTeams({ password }: { password: string }) {
           </button>
         </div>
       </div>
+
+      {showCreate && (
+        <form
+          onSubmit={createTeam}
+          className="bg-white rounded-xl border border-navy-200 p-4 flex flex-wrap items-end gap-3"
+        >
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-semibold text-navy-700 mb-1">Team name</label>
+            <input
+              type="text"
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+              placeholder="e.g. The Birdie Hunters"
+              autoFocus
+              className="w-full border border-navy-200 rounded px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy-700 mb-1">Max size</label>
+            <select
+              value={newTeamMaxSize}
+              onChange={(e) => setNewTeamMaxSize(parseInt(e.target.value))}
+              className="border border-navy-200 rounded px-2 py-2 text-sm"
+            >
+              <option value={4}>4 players</option>
+              <option value={5}>5 players</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={creating || !newTeamName.trim()}
+            className="bg-gold-500 text-navy-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creating ? "Creating..." : "Create Team"}
+          </button>
+        </form>
+      )}
 
       {/* Shotgun Start Assignment Grid */}
       {shotgunStart && (
@@ -264,7 +369,50 @@ export default function AdminTeams({ password }: { password: string }) {
           <div key={team.id} className="bg-white rounded-xl border border-navy-100 p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <h3 className="font-bold text-navy-900">{team.name}</h3>
+                {renamingId === team.id ? (
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); renameTeam(team.id); }}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          setRenamingId(null);
+                          setRenameValue("");
+                        }
+                      }}
+                      className="text-sm font-bold border border-navy-200 rounded px-2 py-1"
+                    />
+                    <button
+                      type="submit"
+                      className="text-xs bg-navy-900 text-white px-2 py-1 rounded hover:bg-navy-800"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRenamingId(null); setRenameValue(""); }}
+                      className="text-xs text-navy-500 hover:text-navy-700"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-navy-900">{team.name}</h3>
+                    <button
+                      onClick={() => { setRenamingId(team.id); setRenameValue(team.name); }}
+                      className="text-xs text-navy-400 hover:text-navy-700"
+                      title="Rename team"
+                    >
+                      Rename
+                    </button>
+                  </>
+                )}
                 <span className="text-xs text-navy-400">
                   {team.members.length}/{team.maxSize}
                 </span>

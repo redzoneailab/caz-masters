@@ -64,3 +64,39 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// Create a new (empty) team
+export async function POST(req: NextRequest) {
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  if (!name) {
+    return NextResponse.json({ error: "Team name is required" }, { status: 400 });
+  }
+  const maxSize = body.maxSize === 5 ? 5 : 4;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { year: TOURNAMENT.year },
+  });
+  if (!tournament) {
+    return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
+  }
+
+  const existing = await prisma.team.findFirst({
+    where: { tournamentId: tournament.id, name },
+    select: { id: true },
+  });
+  if (existing) {
+    return NextResponse.json({ error: "A team with that name already exists" }, { status: 409 });
+  }
+
+  const team = await prisma.team.create({
+    data: { name, maxSize, tournamentId: tournament.id },
+    select: { id: true, name: true },
+  });
+
+  return NextResponse.json({ success: true, team });
+}

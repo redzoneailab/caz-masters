@@ -36,6 +36,23 @@ export async function PATCH(
     data.activeScorerName = null;
     data.activeScorerKey = null;
   }
+  if (typeof body.name === "string") {
+    const name = body.name.trim();
+    if (!name) {
+      return NextResponse.json({ error: "Team name is required" }, { status: 400 });
+    }
+    const team = await prisma.team.findUnique({ where: { id }, select: { tournamentId: true } });
+    if (team) {
+      const conflict = await prisma.team.findFirst({
+        where: { tournamentId: team.tournamentId, name, NOT: { id } },
+        select: { id: true },
+      });
+      if (conflict) {
+        return NextResponse.json({ error: "A team with that name already exists" }, { status: 409 });
+      }
+    }
+    data.name = name;
+  }
 
   await prisma.team.update({ where: { id }, data });
   return NextResponse.json({ success: true });
