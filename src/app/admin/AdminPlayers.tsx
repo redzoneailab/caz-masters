@@ -149,6 +149,19 @@ export default function AdminPlayers({ password }: { password: string }) {
     } catch { setError(`Failed to promote ${player.fullName}`); }
   }
 
+  async function moveToWaitlist(player: Player) {
+    if (!confirm(`Move ${player.fullName} to the waitlist? They'll lose their registered spot and join the bottom of the waitlist.`)) return;
+    try {
+      const res = await fetch(`/api/admin/players/${player.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ waitlisted: true }),
+      });
+      if (!res.ok) throw new Error();
+      await fetchData();
+    } catch { setError(`Failed to move ${player.fullName} to waitlist`); }
+  }
+
   function nextOnWaitlist(): Player | null {
     const queue = players
       .filter((p) => p.waitlisted && !p.flaggedAsSpam)
@@ -463,12 +476,19 @@ export default function AdminPlayers({ password }: { password: string }) {
                       {(p.payment?.status === "paid_online" || p.payment?.status === "paid_manual") && (
                         <button onClick={() => updatePaymentStatus(p.id, "unpaid")} className="text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 px-2 py-1 rounded-lg">Unpaid</button>
                       )}
-                      {p.waitlisted && (
+                      {p.waitlisted ? (
                         <button
                           onClick={() => promoteFromWaitlist(p)}
                           className="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2 py-1 rounded-lg font-medium"
                         >
                           Promote
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => moveToWaitlist(p)}
+                          className="text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-lg font-medium"
+                        >
+                          Move to Waitlist
                         </button>
                       )}
                       <button onClick={() => openEdit(p)} className="text-xs bg-navy-50 text-navy-600 hover:bg-navy-100 px-2 py-1 rounded-lg">Edit</button>
