@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   });
 
   const freeAgents = await prisma.player.findMany({
-    where: { tournamentId: tournament?.id, teamId: null },
+    where: { tournamentId: tournament?.id, teamId: null, waitlisted: false },
     select: { id: true, fullName: true, genderFlight: true, email: true },
     orderBy: { fullName: "asc" },
   });

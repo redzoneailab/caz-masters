@@ -22,7 +22,7 @@ export default async function TeamsPage() {
         orderBy: { createdAt: "asc" },
       },
       players: {
-        where: { teamId: null },
+        where: { teamId: null, waitlisted: false },
         select: { id: true, fullName: true, genderFlight: true },
         orderBy: { fullName: "asc" },
       },
