@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       where: { tournamentId: tournament.id, waitlisted: false },
     });
 
-    const isWaitlisted = playerCount >= tournament.maxPlayers;
+    const isWaitlisted = tournament.forceWaitlist || playerCount >= tournament.maxPlayers;
 
     // Check for duplicate registration
     const existing = await prisma.player.findUnique({
@@ -128,6 +128,20 @@ export async function POST(req: NextRequest) {
           },
         });
       }
+    }
+
+    // Waitlist signup — skip payment entirely. They'll pay if/when promoted.
+    if (isWaitlisted) {
+      try {
+        await sendConfirmationEmail(email, fullName, "waitlist");
+      } catch {
+        // Don't fail registration if email fails
+      }
+      return NextResponse.json({
+        success: true,
+        waitlisted: true,
+        redirect: `/register/confirmation?status=waitlist&waitlisted=true`,
+      });
     }
 
     // Free registration mode — skip payment entirely

@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [{ freeRegistration, entryFee }, tournament] = await Promise.all([
+  const [{ freeRegistration, entryFee, waitlistMode }, tournament] = await Promise.all([
     getTournamentSettings(),
     prisma.tournament.findUnique({
       where: { year: TOURNAMENT.year },
@@ -98,7 +98,7 @@ export default async function Home() {
               <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">WHERE</p>
               <p className="text-xl sm:text-2xl font-bold text-navy-900">Caz Golf Club, Cazenovia NY</p>
             </div>
-            <SpotsCounter filled={spotsFilled} total={spotsTotal} />
+            <SpotsCounter filled={spotsFilled} total={spotsTotal} waitlistMode={waitlistMode} />
             {!freeRegistration && (
               <div>
                 <p className="text-gold-500 font-black text-sm tracking-[0.2em] uppercase mb-2">COST</p>

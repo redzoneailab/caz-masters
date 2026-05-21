@@ -55,8 +55,33 @@ export async function sendConfirmationEmail(
   playerName: string,
   paymentStatus: string
 ) {
+  const isWaitlist = paymentStatus === "waitlist";
   const isPaid = paymentStatus === "paid_online";
   const isFree = paymentStatus === "free";
+
+  if (isWaitlist) {
+    await getResend().emails.send({
+      from: FROM_ADDRESS,
+      to,
+      subject: "You're on the Caz Masters 2026 waitlist",
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #15803d; font-size: 28px;">You're on the list!</h1>
+          <p style="font-size: 16px; color: #333;">Hey ${playerName},</p>
+          <p style="font-size: 16px; color: #333;">
+            The 15th Annual Caz Masters field is full, but we've got you down on the waitlist.
+            If a spot opens up, we'll reach out — no payment needed until then.
+          </p>
+          <div style="background: #fffbeb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 4px 0;"><strong>Date:</strong> Friday, July 3rd, 2026</p>
+            <p style="margin: 4px 0;"><strong>Location:</strong> Cazenovia Golf Club</p>
+          </div>
+          <p style="font-size: 14px; color: #999; margin-top: 40px;">The Caz Masters Golf Tournament</p>
+        </div>
+      `,
+    });
+    return;
+  }
 
   const paymentLine = isPaid
     ? "Paid - You're all set!"

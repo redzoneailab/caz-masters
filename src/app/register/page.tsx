@@ -21,7 +21,7 @@ export default async function RegisterPage() {
     redirect("/auth/signin?callbackUrl=/register&message=register");
   }
 
-  const { freeRegistration, entryFee } = await getTournamentSettings();
+  const { freeRegistration, entryFee, waitlistMode } = await getTournamentSettings();
 
   // Look up previous registration for signed-in users
   let prefill: { fullName: string; email: string; phone: string; shirtSize: string; genderFlight: string } | null = null;
@@ -67,9 +67,13 @@ export default async function RegisterPage() {
           <div className="absolute inset-0 bg-navy-950/75" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h1 className="text-4xl sm:text-6xl font-black mb-3 uppercase">You In?</h1>
+          <h1 className="text-4xl sm:text-6xl font-black mb-3 uppercase">
+            {waitlistMode ? "We\u2019re Full" : "You In?"}
+          </h1>
           <p className="text-white/80 text-lg sm:text-xl font-light">
-            {freeRegistration
+            {waitlistMode
+              ? "Drop your info to join the waitlist. We\u2019ll reach out if a spot opens up."
+              : freeRegistration
               ? "Lock in your spot. Let\u2019s do this."
               : `Lock in your spot. $${entryFee}. Let\u2019s do this.`}
           </p>

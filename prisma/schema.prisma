@@ -15,6 +15,7 @@ model Tournament {
   location           String
   maxPlayers         Int         @default(60)
   registrationOpen   Boolean     @default(true)
+  forceWaitlist      Boolean     @default(false)
   teamsLocked        Boolean     @default(false)
   entryFee           Int         @default(15000)
   freeRegistration   Boolean     @default(false)

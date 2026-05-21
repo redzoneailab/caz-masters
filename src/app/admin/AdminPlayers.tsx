@@ -34,6 +34,7 @@ interface Player {
 interface Tournament {
   id: string;
   registrationOpen: boolean;
+  forceWaitlist: boolean;
   freeRegistration: boolean;
   entryFee: number;
   maxPlayers: number;
@@ -267,6 +268,24 @@ export default function AdminPlayers({ password }: { password: string }) {
     await fetchData();
   }
 
+  async function toggleForceWaitlist() {
+    if (!tournament) return;
+    const next = !tournament.forceWaitlist;
+    const msg = next
+      ? "Mark registration as full? New signups will go straight to the waitlist (no payment collected)."
+      : "Reopen registration? New signups will register normally again.";
+    if (!confirm(msg)) return;
+    try {
+      const res = await fetch(`/api/admin/tournament`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ forceWaitlist: next }),
+      });
+      if (!res.ok) throw new Error();
+      await fetchData();
+    } catch { setError("Failed to update waitlist mode"); }
+  }
+
   async function toggleSpamFlag(id: string, current: boolean) {
     try {
       await fetch(`/api/admin/players/${id}`, { method: "PATCH", headers, body: JSON.stringify({ flaggedAsSpam: !current }) });
@@ -356,7 +375,13 @@ export default function AdminPlayers({ password }: { password: string }) {
         </div>
         <div className="bg-white rounded-xl p-4 border border-navy-100">
           <p className="text-sm text-navy-500">Registration</p>
-          <p className="text-xl font-bold mt-1">{tournament?.registrationOpen ? <span className="text-navy-600">Open</span> : <span className="text-red-700">Closed</span>}</p>
+          <p className="text-xl font-bold mt-1">
+            {!tournament?.registrationOpen
+              ? <span className="text-red-700">Closed</span>
+              : tournament?.forceWaitlist
+              ? <span className="text-amber-600">Waitlist</span>
+              : <span className="text-navy-600">Open</span>}
+          </p>
           {flaggedCount > 0 && (
             <p className="text-xs text-red-600 font-bold mt-1">{flaggedCount} flagged spam</p>
           )}
@@ -368,6 +393,18 @@ export default function AdminPlayers({ password }: { password: string }) {
         <button onClick={fetchData} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">Refresh</button>
         <button onClick={exportCSV} className="bg-white border border-navy-200 text-navy-600 px-4 py-2 rounded-lg text-sm hover:bg-navy-50">Export CSV</button>
         <button onClick={() => setShowAdd(true)} className="bg-gold-400 hover:bg-gold-300 text-navy-950 font-bold px-4 py-2 rounded-lg text-sm">Add Player</button>
+        {tournament && (
+          <button
+            onClick={toggleForceWaitlist}
+            className={`font-bold px-4 py-2 rounded-lg text-sm ${
+              tournament.forceWaitlist
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-white border border-amber-300 text-amber-700 hover:bg-amber-50"
+            }`}
+          >
+            {tournament.forceWaitlist ? "Field Full — Reopen Registration" : "Mark Field Full (Waitlist Only)"}
+          </button>
+        )}
         {flaggedCount > 0 && (
           <button onClick={deleteAllFlagged} className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg text-sm">
             Delete All Flagged ({flaggedCount})

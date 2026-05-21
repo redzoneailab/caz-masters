@@ -25,6 +25,7 @@ export default function RegistrationForm({ prefill }: Props) {
   // Tournament settings from DB
   const [freeRegistration, setFreeRegistration] = useState(false);
   const [entryFee, setEntryFee] = useState(TOURNAMENT.entryFee);
+  const [waitlistMode, setWaitlistMode] = useState(false);
 
   // After party state
   const [addAfterParty, setAddAfterParty] = useState(false);
@@ -40,6 +41,7 @@ export default function RegistrationForm({ prefill }: Props) {
       .then((data) => {
         setFreeRegistration(data.freeRegistration ?? false);
         setEntryFee(data.entryFee ?? TOURNAMENT.entryFee);
+        setWaitlistMode(data.waitlistMode ?? false);
       })
       .catch(() => {});
   }, []);
@@ -266,7 +268,23 @@ export default function RegistrationForm({ prefill }: Props) {
 
       {/* Payment / Register */}
       <div className="border-t-2 border-navy-100 pt-6 space-y-3">
-        {freeRegistration ? (
+        {waitlistMode ? (
+          <>
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center">
+              <p className="font-black text-amber-900 uppercase tracking-wide text-sm">Field is full</p>
+              <p className="text-amber-800 text-sm mt-1">
+                Add yourself to the waitlist. We&apos;ll reach out if a spot opens up — no payment until then.
+              </p>
+            </div>
+            <button
+              onClick={() => handleSubmit("day_of")}
+              disabled={loading || !isValid}
+              className="w-full bg-gold-400 hover:bg-gold-300 disabled:bg-navy-200 disabled:text-navy-400 text-navy-950 font-black py-4 rounded-xl transition-all text-lg uppercase tracking-wide hover:scale-[1.02]"
+            >
+              {loading ? "Hold tight..." : "Join the Waitlist"}
+            </button>
+          </>
+        ) : freeRegistration ? (
           <>
             <button
               onClick={() => handleSubmit("free")}

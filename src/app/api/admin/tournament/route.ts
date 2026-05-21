@@ -16,6 +16,7 @@ export async function PATCH(req: NextRequest) {
   const data: Record<string, unknown> = {};
 
   if (typeof body.registrationOpen === "boolean") data.registrationOpen = body.registrationOpen;
+  if (typeof body.forceWaitlist === "boolean") data.forceWaitlist = body.forceWaitlist;
   if (typeof body.freeRegistration === "boolean") data.freeRegistration = body.freeRegistration;
   if (typeof body.entryFee === "number") data.entryFee = body.entryFee;
   if (typeof body.shotgunStart === "boolean") data.shotgunStart = body.shotgunStart;
