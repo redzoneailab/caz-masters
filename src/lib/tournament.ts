@@ -12,7 +12,7 @@ export const TOURNAMENT = {
   numHoles: 18,
   afterPartyPrice: 25, // dollars per person
   afterPartyPriceCents: 2500,
-  afterPartyVenue: "Meier's Creek",
+  afterPartyVenue: "Madison County Distillery",
   afterPartyTime: "Around 3:00 PM",
   afterPartyDate: "July 3rd, 2026",
   afterPartyIncludes: [
