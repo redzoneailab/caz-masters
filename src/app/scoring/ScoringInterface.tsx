@@ -102,6 +102,7 @@ export default function ScoringInterface() {
   const [authed, setAuthed] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [eligiblePlayers, setEligiblePlayers] = useState<{ fullName: string; teamName: string | null }[]>([]);
 
   // Scoring state
   const [teamId, setTeamId] = useState("");
@@ -136,6 +137,17 @@ export default function ScoringInterface() {
   useEffect(() => {
     if (online && authed) syncPendingScores();
   }, [online, authed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load the eligible-scorer list for the name picker
+  useEffect(() => {
+    if (authed) return;
+    let cancelled = false;
+    fetch("/api/scoring/players")
+      .then((res) => (res.ok ? res.json() : { players: [] }))
+      .then((data) => { if (!cancelled) setEligiblePlayers(data.players || []); })
+      .catch(() => { /* dropdown falls back to empty; PIN step still works */ });
+    return () => { cancelled = true; };
+  }, [authed]);
 
   // Load cached data from localStorage on mount
   useEffect(() => {
@@ -382,15 +394,21 @@ export default function ScoringInterface() {
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-white/70 mb-1.5">Your Name</label>
-              <input
-                type="text"
+              <select
                 value={scorerName}
                 onChange={(e) => setScorerName(e.target.value)}
-                placeholder="Your full name"
-                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg placeholder:text-white/30 focus:border-gold-400 focus:outline-none"
+                className="w-full rounded-xl bg-navy-900 border border-navy-700 text-white px-4 py-3.5 text-lg focus:border-gold-400 focus:outline-none"
                 required
-                autoComplete="name"
-              />
+              >
+                <option value="" disabled>
+                  {eligiblePlayers.length ? "Select your name" : "Loading players…"}
+                </option>
+                {eligiblePlayers.map((p) => (
+                  <option key={`${p.fullName}-${p.teamName ?? ""}`} value={p.fullName}>
+                    {p.teamName ? `${p.fullName} — ${p.teamName}` : p.fullName}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-white/70 mb-1.5">Scorer PIN</label>
