@@ -89,12 +89,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name required" }, { status: 400 });
   }
 
-  // Check scorer lock
+  // Check scorer lock. Allow the same scorer to resume — either with a matching
+  // session key (same device) or by selecting the same name (new device / cleared
+  // cache). Only a *different* named scorer is blocked, which is the case the lock
+  // is meant to guard against (two people editing one team at once).
+  const sameScorerByName =
+    !!scorerName &&
+    !!team.activeScorerName &&
+    scorerName.trim().toLowerCase() === team.activeScorerName.trim().toLowerCase();
+
   if (team.activeScorerKey) {
-    // Allow resuming if the client has the matching key
-    if (existingKey && existingKey === team.activeScorerKey) {
-      // Resuming existing session — return data
-    } else {
+    const hasMatchingKey = !!existingKey && existingKey === team.activeScorerKey;
+    if (!hasMatchingKey && !sameScorerByName) {
       return NextResponse.json(
         { error: `Scoring is already in progress for this team by ${team.activeScorerName || "another scorer"}.` },
         { status: 409 }
