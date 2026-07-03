@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
   if (!team.activeScorerKey || scorerKey !== team.activeScorerKey) {
     await prisma.team.update({
-      where: { id: teamId },
+      where: { id: team.id },
       data: {
         activeScorerName: scorerName || "Unknown",
         activeScorerKey: scorerKey,
