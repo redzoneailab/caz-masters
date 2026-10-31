@@ -4,6 +4,16 @@ import EmailProvider from "next-auth/providers/email";
 import { prisma } from "./prisma";
 import { CazMastersAdapter } from "./auth-adapter";
 import { sendMagicLinkEmail } from "./resend";
+import { TOURNAMENT } from "./tournament";
+
+async function isKnownEmail(email: string) {
+  const where = { email: { equals: email, mode: "insensitive" as const } };
+  const [account, player] = await Promise.all([
+    prisma.userAccount.findFirst({ where, select: { id: true } }),
+    prisma.player.findFirst({ where, select: { id: true } }),
+  ]);
+  return Boolean(account || player);
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: CazMastersAdapter(),
@@ -25,8 +35,17 @@ export const authOptions: NextAuthOptions = {
     verifyRequest: "/auth/verify-request",
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, email }) {
       if (!user.email) return true;
+
+      // Magic-link request, before anything is sent. Bots submit strangers' addresses from
+      // rotating IPs, so after the tournament only known addresses get an email. Unknown ones
+      // see the normal "check your email" page, so the form doesn't reveal who has an account.
+      if (email?.verificationRequest) {
+        const offSeason = Date.now() > TOURNAMENT.date.getTime();
+        if (!offSeason || (await isKnownEmail(user.email))) return true;
+        return "/auth/verify-request";
+      }
 
       // Update avatar from Google profile
       if (account?.provider === "google" && user.image) {
