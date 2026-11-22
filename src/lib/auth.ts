@@ -6,6 +6,21 @@ import { CazMastersAdapter } from "./auth-adapter";
 import { sendMagicLinkEmail } from "./resend";
 import { TOURNAMENT } from "./tournament";
 
+const INVALID_EMAIL = "Invalid email address format.";
+
+/** Hardened email identifier normalization for magic-link sign-in (GHSA-7rqj-j65f-68wh). */
+export function normalizeMagicLinkIdentifier(identifier: string): string {
+  const normalized = identifier.normalize("NFKC").trim().toLowerCase();
+  if (!/^[\x00-\x7F]+$/.test(normalized)) {
+    throw new Error(INVALID_EMAIL);
+  }
+  const parts = normalized.split("@");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error(INVALID_EMAIL);
+  }
+  return normalized;
+}
+
 async function isKnownEmail(email: string) {
   const where = { email: { equals: email, mode: "insensitive" as const } };
   const [account, player] = await Promise.all([
@@ -24,6 +39,7 @@ export const authOptions: NextAuthOptions = {
       allowDangerousEmailAccountLinking: true,
     }),
     EmailProvider({
+      normalizeIdentifier: normalizeMagicLinkIdentifier,
       sendVerificationRequest: async ({ identifier: email, url }) => {
         await sendMagicLinkEmail(email, url);
       },
